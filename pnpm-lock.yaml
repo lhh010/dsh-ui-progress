@@ -26,6 +26,9 @@ importers:
       '@deepseek-ai/dsh-invariants':
         specifier: link:../.dsh/source/current/packages/support/invariants
         version: link:../.dsh/source/current/packages/support/invariants
+      '@deepseek-ai/dsh-tool-todo':
+        specifier: link:../.dsh/source/current/packages/todo/tool-todo
+        version: link:../.dsh/source/current/packages/todo/tool-todo
       '@types/react':
         specifier: ~18.3.1
         version: 18.3.31

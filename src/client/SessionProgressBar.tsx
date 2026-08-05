@@ -1,17 +1,20 @@
 /**
  * SessionProgressBar: a resident session-progress strip in the composer
- * input dock, derived entirely from the live {@link ConversationSnapshot}.
+ * input dock, derived entirely from the live {@link ConversationSnapshot}
+ * plus the `todos` session projection.
  *
  * The bar needs no model-facing tool: it reads the framework's `useSession`
- * hook (session-scope standard kit) and renders the real execution state —
- * whether the turn is running, which tool call is in flight, how many tool
- * results have settled in the current window, and the current turn number.
- * Animation follows the state: a shimmer glide while running, a static
- * filled bar when idle, and a completion glow whenever the window shows a
- * finished turn.
+ * hook and the `todos` projection (session-scope standard kit) and renders
+ * the real execution state — whether the turn is running, which tool call is
+ * in flight, whether the model is emitting reasoning, and the task
+ * completion ratio. Progress follows the truth order: a live todos list wins
+ * (completed/total is the real task completion — five tasks with two done
+ * reads 40%); without one, each settled tool result advances the bar by one
+ * segment as a bounded heuristic. Animation follows the state: a spinning
+ * glyph and shimmer glide while running, a static filled bar when idle.
  */
 import { IconLoadingOutline16, IconSparkle16 } from '@deepseek-ai/dsh-client-ui-primitives'
-import type { ConversationSnapshot } from '@deepseek-ai/dsh-client-runtime/client'
+import type { ConversationSnapshot, TodoItem } from '@deepseek-ai/dsh-client-runtime/client'
 import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
 import clsx from 'clsx'
 import type { ReactNode } from 'react'
@@ -34,12 +37,12 @@ function settledToolCount(snapshot: ConversationSnapshot): number {
 }
 
 /**
- * The bar's progress value in 0..100. Each settled tool result advances the
- * bar by one fixed segment (window cap 10), so the fill both reflects real
- * work completed and stays visually bounded in long sessions.
+ * True while the model is emitting reasoning: the in-flight partial carries a
+ * reasoning block and no tool call is in flight (a running tool is the more
+ * specific state and wins the label).
  */
-function progressPercent(snapshot: ConversationSnapshot): number {
-  return Math.min(100, settledToolCount(snapshot) * 10)
+function isReasoning(snapshot: ConversationSnapshot): boolean {
+  return snapshot.partial?.blocks.some(block => block.kind === 'reasoning') ?? false
 }
 
 /** The in-flight tool name when running; undefined when nothing is executing. */
@@ -47,28 +50,59 @@ function runningTool(snapshot: ConversationSnapshot): string | undefined {
   return snapshot.runningCalls[0]?.name
 }
 
+/** Completed/total from a live todos projection; null when unavailable or empty. */
+function todoCounts(todos: readonly TodoItem[] | null | undefined): { done: number; total: number } | null {
+  if (todos === undefined || todos === null || todos.length === 0) return null
+  let done = 0
+  for (const item of todos) {
+    if (item.status === 'completed') done += 1
+  }
+  return { done, total: todos.length }
+}
+
+/**
+ * The bar's progress value in 0..100. A live `todos` projection wins: the
+ * completed/total ratio is the real task completion (five tasks, two done →
+ * 40%). Without one, each settled tool result advances the bar by one fixed
+ * segment (window cap 10), a visually bounded heuristic for sessions that
+ * never write a todo list.
+ */
+function progressPercent(snapshot: ConversationSnapshot, todos: readonly TodoItem[] | null | undefined): number {
+  const counts = todoCounts(todos)
+  if (counts !== null) return Math.round((counts.done / counts.total) * 100)
+  return Math.min(100, settledToolCount(snapshot) * 10)
+}
+
 /** Human label for the current state; null means the dock row renders no text. */
 function stateLabel(
   snapshot: ConversationSnapshot,
   runningToolName: string | undefined,
+  thinking: boolean,
+  counts: { done: number; total: number } | null,
   t: SessionProgressBarProps['t'],
 ): ReactNode {
   if (snapshot.running) {
-    return runningToolName !== undefined ? t('bar.tool', { name: runningToolName }) : t('bar.running')
+    if (runningToolName !== undefined) return t('bar.tool', { name: runningToolName })
+    if (thinking) return t('bar.thinking')
+    return t('bar.running')
   }
+  if (counts !== null) return t('bar.todos', { done: counts.done, total: counts.total })
   return t('bar.idle')
 }
 
 /**
  * Resident progress strip. Renders nothing until a session snapshot exists
  * (the no-session hero has no dock content), then shows the state text, the
- * animated fill bar, and the turn/tool counters.
+ * animated fill bar with a live percent readout, and the turn/tool counters.
  */
-export function SessionProgressBar({ session, t }: SessionProgressBarProps) {
+export function SessionProgressBar({ session, t, useProjection }: SessionProgressBarProps) {
   if (session === undefined || session === null) return null
+  const todos = useProjection('todos')
   const toolName = runningTool(session)
   const running = session.running
-  const percent = progressPercent(session)
+  const thinking = running && toolName === undefined && isReasoning(session)
+  const counts = todoCounts(todos)
+  const percent = progressPercent(session, todos)
   const turn = session.turnTimings.size
   const settled = settledToolCount(session)
 
@@ -78,7 +112,7 @@ export function SessionProgressBar({ session, t }: SessionProgressBarProps) {
         <span className={clsx(css.glyph, running && css.glyphRunning)}>
           {running ? <IconLoadingOutline16 size={14} /> : <IconSparkle16 size={14} />}
         </span>
-        <span className={css.label}>{stateLabel(session, toolName, t)}</span>
+        <span className={css.label}>{stateLabel(session, toolName, thinking, counts, t)}</span>
         <div className={css.track} role="progressbar" aria-valuenow={percent} aria-valuemin={0} aria-valuemax={100}>
           <div
             className={clsx(css.fill, running && css.fillRunning)}
@@ -86,6 +120,7 @@ export function SessionProgressBar({ session, t }: SessionProgressBarProps) {
           />
           {running && <div className={css.shimmer} />}
         </div>
+        <span className={css.percent}>{percent}%</span>
         <span className={css.counter}>{t('bar.turn', { turn })}</span>
         <span className={css.counter}>{t('bar.tools', { count: settled })}</span>
       </div>

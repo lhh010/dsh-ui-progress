@@ -9,6 +9,8 @@
 import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
 // Type-only: pulls the locale plugin's Context merge (ctx.locale).
 import type {} from '@deepseek-ai/dsh-client-locale/client'
+// Type-only: the `todos` SessionProjectionMap key merge (single source, the todo domain's pure outlet).
+import type {} from '@deepseek-ai/dsh-tool-todo/client'
 import { ProgressCard } from './ProgressCard.tsx'
 import { SessionProgressBar } from './SessionProgressBar.tsx'
 import { en, zh, type ProgressKey } from './locales.ts'

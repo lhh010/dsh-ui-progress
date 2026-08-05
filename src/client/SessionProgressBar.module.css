@@ -136,3 +136,15 @@
   color: var(--dsw-alias-label-tertiary);
   white-space: nowrap;
 }
+
+/* Live percent readout next to the track. */
+.percent {
+  flex: none;
+  min-width: 34px;
+  text-align: right;
+  font-size: 12px;
+  line-height: 18px;
+  font-variant-numeric: tabular-nums;
+  color: var(--dsw-alias-label-secondary);
+  white-space: nowrap;
+}
