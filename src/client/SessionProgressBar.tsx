@@ -50,26 +50,29 @@ function runningTool(snapshot: ConversationSnapshot): string | undefined {
   return snapshot.runningCalls[0]?.name
 }
 
-/** Completed/total from a live todos projection; null when unavailable or empty. */
-function todoCounts(todos: readonly TodoItem[] | null | undefined): { done: number; total: number } | null {
+/** Completed/active/total from a live todos projection; null when unavailable or empty. */
+function todoCounts(todos: readonly TodoItem[] | null | undefined): { done: number; active: number; total: number } | null {
   if (todos === undefined || todos === null || todos.length === 0) return null
   let done = 0
+  let active = 0
   for (const item of todos) {
     if (item.status === 'completed') done += 1
+    else if (item.status === 'in_progress') active += 1
   }
-  return { done, total: todos.length }
+  return { done, active, total: todos.length }
 }
 
 /**
  * The bar's progress value in 0..100. A live `todos` projection wins: the
- * completed/total ratio is the real task completion (five tasks, two done →
- * 40%). Without one, each settled tool result advances the bar by one fixed
- * segment (window cap 10), a visually bounded heuristic for sessions that
- * never write a todo list.
+ * (completed + in-progress)/total ratio is the real task completion — the
+ * in-flight task counts toward progress, so five tasks with two done and one
+ * in progress reads 60%. Without one, each settled tool result advances the
+ * bar by one fixed segment (window cap 10), a visually bounded heuristic for
+ * sessions that never write a todo list.
  */
 function progressPercent(snapshot: ConversationSnapshot, todos: readonly TodoItem[] | null | undefined): number {
   const counts = todoCounts(todos)
-  if (counts !== null) return Math.round((counts.done / counts.total) * 100)
+  if (counts !== null) return Math.round(((counts.done + counts.active) / counts.total) * 100)
   return Math.min(100, settledToolCount(snapshot) * 10)
 }
 
@@ -78,7 +81,7 @@ function stateLabel(
   snapshot: ConversationSnapshot,
   runningToolName: string | undefined,
   thinking: boolean,
-  counts: { done: number; total: number } | null,
+  counts: { done: number; active: number; total: number } | null,
   t: SessionProgressBarProps['t'],
 ): ReactNode {
   if (snapshot.running) {
@@ -86,7 +89,7 @@ function stateLabel(
     if (thinking) return t('bar.thinking')
     return t('bar.running')
   }
-  if (counts !== null) return t('bar.todos', { done: counts.done, total: counts.total })
+  if (counts !== null) return t('bar.todos', { done: counts.done, active: counts.active, total: counts.total })
   return t('bar.idle')
 }
 
