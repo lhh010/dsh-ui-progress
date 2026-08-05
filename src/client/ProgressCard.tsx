@@ -30,7 +30,9 @@ function parseArgs(argsRaw: string): ProgressArgs | null {
   try {
     const parsed: unknown = JSON.parse(argsRaw)
     if (typeof parsed !== 'object' || parsed === null) return null
-    return parsed as ProgressArgs
+    // Every ProgressArgs field is optional unknown, so the narrowed `object`
+    // is already assignable — no assertion needed.
+    return parsed
   } catch {
     // Mid-stream truncation or malformed model JSON: fall back to the generic row.
     return null

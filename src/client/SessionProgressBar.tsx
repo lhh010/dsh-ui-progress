@@ -96,6 +96,9 @@ function stateLabel(
  * animated fill bar with a live percent readout, and the turn/tool counters.
  */
 export function SessionProgressBar({ session, t, useProjection }: SessionProgressBarProps) {
+  // Defensive guard: InputZone.session is typed non-null, but a host passing
+  // no session must degrade to an empty dock instead of crashing.
+  // oxlint-disable-next-line typescript/no-unnecessary-condition
   if (session === undefined || session === null) return null
   const todos = useProjection('todos')
   const toolName = runningTool(session)
