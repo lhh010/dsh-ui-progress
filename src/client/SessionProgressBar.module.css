@@ -1,0 +1,138 @@
+/* SessionProgressBar: resident session-progress strip in the composer input
+   dock (the GoalBar family). Colors/motion reference --dsw tokens; motion
+   durations are local literals (no motion token family exists yet). The
+   three animation layers: a spinning loading glyph while the turn runs, a
+   shimmer band gliding over the fill while the turn runs, and a subtle glow
+   on the whole bar while running. */
+
+.dock {
+  box-sizing: border-box;
+  width: calc(
+    100% -
+    var(--dsh-composer-side-clearance) -
+    var(--dsh-composer-side-clearance) -
+    var(--dsh-composer-dock-inset) -
+    var(--dsh-composer-dock-inset) -
+    var(--dsh-composer-dock-inset) -
+    var(--dsh-composer-dock-inset)
+  );
+  margin: 0 auto;
+}
+
+.bar {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  max-width: calc(var(--dsh-composer-card-max-width) - 4 * var(--dsh-composer-dock-inset));
+  height: 36px;
+  margin: 0 auto;
+  padding: 4px 5px 4px 12px;
+  border: 1px solid var(--dsw-alias-border-l1);
+  border-radius: 12px;
+  background: var(--dsw-specific-tip);
+}
+
+/* Running state: a soft brand-colored halo pulses around the bar. */
+.bar[data-state='running'] {
+  border-color: color-mix(in srgb, var(--dsw-alias-state-business-primary) 40%, transparent);
+  animation: dsh-session-progress-glow 2s ease-in-out infinite;
+}
+
+@keyframes dsh-session-progress-glow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--dsw-alias-state-business-primary) 0%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 10px 1px color-mix(in srgb, var(--dsw-alias-state-business-primary) 28%, transparent);
+  }
+}
+
+.glyph {
+  display: inline-flex;
+  flex: none;
+  color: var(--dsw-alias-state-business-primary);
+}
+
+/* Running spinner: the loading glyph rotates while the turn runs (same 1s
+   linear rotation as the progress card's leading glyph). */
+.glyphRunning {
+  animation: dsh-session-progress-spin 1s linear infinite;
+}
+
+@keyframes dsh-session-progress-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Matches the GoalBar label family (13/24 medium, primary). */
+.label {
+  flex: none;
+  font-size: 13px;
+  line-height: 24px;
+  font-weight: 500;
+  color: var(--dsw-alias-label-primary);
+}
+
+/* Progress track + fill; width transition eases the fill to real progress. */
+.track {
+  position: relative;
+  flex: 1;
+  min-width: 60px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--dsw-alias-bg-layer-2);
+  overflow: hidden;
+}
+
+.fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  border-radius: 999px;
+  background: var(--dsw-alias-state-business-primary);
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.fillRunning {
+  background: linear-gradient(
+    90deg,
+    var(--dsw-alias-state-business-primary),
+    var(--dsw-alias-brand-primary)
+  );
+}
+
+/* Shimmer band gliding over the fill while the turn runs. */
+.shimmer {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 40%;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--dsw-alias-bg-base) 55%, transparent),
+    transparent
+  );
+  animation: dsh-session-progress-shimmer 1.4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes dsh-session-progress-shimmer {
+  0% { transform: translateX(-120%); }
+  100% { transform: translateX(320%); }
+}
+
+.counter {
+  flex: none;
+  font-size: 12px;
+  line-height: 18px;
+  font-variant-numeric: tabular-nums;
+  color: var(--dsw-alias-label-tertiary);
+  white-space: nowrap;
+}
