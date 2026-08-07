@@ -14,17 +14,19 @@
  * glyph and shimmer glide while running, a static filled bar when idle.
  *
  * While running, the strip also shows a live elapsed readout (since the
- * current turn started) and, when the fill reflects real todo completion, an
- * ETA extrapolated from progress × elapsed — the segment heuristic carries
- * no time meaning, so it never yields an ETA.
+ * current turn started). The ETA is never extrapolated: it rides the model's
+ * own knowledge — the latest in-window `report_progress` call's `eta`
+ * argument (a rough remaining-time estimate). When the model has not
+ * reported one, no ETA shows (unknown stays unknown).
  */
 import { IconLoadingOutline16, IconSparkle16 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { ConversationSnapshot, TodoItem } from '@deepseek-ai/dsh-client-runtime/client'
 import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
 import clsx from 'clsx'
 import type { ReactNode } from 'react'
+import { etaOf, parseArgs } from './args.ts'
 import css from './SessionProgressBar.module.css'
-import { formatElapsed, formatEta, useNow } from './timing.ts'
+import { formatElapsed, useNow } from './timing.ts'
 
 /** Dock entry props: InputZone owner share + session standard kit + locale seat. */
 export type SessionProgressBarProps = import('@deepseek-ai/dsh-client-ui-slots').PropsRuntime<'conversation.input.dock'> & PropsLocale<'progress'>
@@ -80,6 +82,33 @@ function lastTurnDuration(snapshot: ConversationSnapshot): number | null {
   return duration
 }
 
+/**
+ * The model-reported ETA display string from the LATEST in-window
+ * `report_progress` call (running or settled, by report time). The latest
+ * report is the model's last word: if it carries no eta, the strip shows no
+ * ETA even when an older report did.
+ */
+function latestReportEta(snapshot: ConversationSnapshot): string | null {
+  let latestTime = -1
+  let latestEta: string | null = null
+  for (const node of snapshot.nodes) {
+    if (node.kind !== 'tool-result' || node.call?.name !== 'report_progress') continue
+    const time = node.callTime ?? node.time
+    if (time >= latestTime) {
+      latestTime = time
+      latestEta = etaOf(parseArgs(node.call.argsRaw))
+    }
+  }
+  for (const call of snapshot.runningCalls) {
+    if (call.name !== 'report_progress') continue
+    if (call.time >= latestTime) {
+      latestTime = call.time
+      latestEta = etaOf(parseArgs(call.argsRaw))
+    }
+  }
+  return latestEta
+}
+
 /** Completed/active/total from a live todos projection; null when unavailable or empty. */
 function todoCounts(todos: readonly TodoItem[] | null | undefined): { done: number; active: number; total: number } | null {
   if (todos === undefined || todos === null || todos.length === 0) return null
@@ -127,8 +156,8 @@ function stateLabel(
  * Resident progress strip. Renders nothing until a session snapshot exists
  * (the no-session hero has no dock content), then shows the state text, the
  * animated fill bar with a live percent readout, the turn/tool counters, and
- * — while running — the live elapsed and the todos-based ETA (or the last
- * settled turn's duration when idle).
+ * — while running — the live elapsed plus the model-reported ETA (or the
+ * last settled turn's duration when idle).
  */
 export function SessionProgressBar({ session, t, useProjection }: SessionProgressBarProps) {
   // Defensive guard: InputZone.session is typed non-null, but a host passing
@@ -146,11 +175,8 @@ export function SessionProgressBar({ session, t, useProjection }: SessionProgres
   const turnStart = runningTurnStart(session)
   const now = useNow(running)
   const elapsed = turnStart !== null ? Math.max(0, now - turnStart) : null
-  // ETA needs a time-meaningful fill: the todos ratio only (the segment
-  // heuristic is a bounded visual, not elapsed-proportional work).
-  const eta = running && elapsed !== null && counts !== null && percent > 0 && percent < 100
-    ? Math.round((elapsed * (100 - percent)) / percent)
-    : null
+  // ETA rides the model's own knowledge — never extrapolated from the fill.
+  const modelEta = running ? latestReportEta(session) : null
   const lastTurn = running ? null : lastTurnDuration(session)
 
   return (
@@ -168,7 +194,7 @@ export function SessionProgressBar({ session, t, useProjection }: SessionProgres
           {running && <div className={css.shimmer} />}
         </div>
         <span className={css.percent}>{percent}%</span>
-        {running && eta !== null && <span className={css.eta}>{t('bar.eta', { duration: formatEta(eta) })}</span>}
+        {running && modelEta !== null && <span className={css.eta}>{t('bar.eta', { duration: modelEta })}</span>}
         {running && elapsed !== null && <span className={css.counter}>{t('bar.elapsed', { duration: formatElapsed(elapsed) })}</span>}
         {!running && lastTurn !== null && <span className={css.counter}>{t('bar.lastTurn', { duration: formatElapsed(lastTurn) })}</span>}
         <span className={css.counter}>{t('bar.turn', { turn })}</span>

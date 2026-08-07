@@ -9,12 +9,13 @@
  * settled state freezes the final bar.
  *
  * Live chrome on top of the bar: while the call runs the card ticks an
- * elapsed readout and, when a percent is reported, an ETA extrapolated from
- * progress × elapsed; a settled call shows its total wall time. A failed
- * result (isError) switches the whole card to the error state — warning
- * glyph, error-tinted fill and copy. When several in-window calls share the
- * same task name, the card replaces the single stage line with the derived
- * stage timeline (chain of distinct reported stages).
+ * elapsed readout and, when the model reports a rough remaining-time
+ * estimate (args.eta), an ETA row; a settled call shows its total wall time.
+ * No reported eta — no ETA row (unknown stays unknown). A failed result
+ * (isError) switches the whole card to the error state — warning glyph,
+ * error-tinted fill and copy. When several in-window calls share the same
+ * task name, the card replaces the single stage line with the derived stage
+ * timeline (chain of distinct reported stages).
  */
 import {
   IconCheckOutline16,
@@ -26,10 +27,10 @@ import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
 import clsx from 'clsx'
 import type { ReactNode } from 'react'
 import { useMemo } from 'react'
-import { parseArgs, taskOf, toPercent } from './args.ts'
+import { parseArgs, taskOf, toPercent, etaOf } from './args.ts'
 import css from './ProgressCard.module.css'
 import { deriveStageTimeline } from './stage-timeline.ts'
-import { formatElapsed, formatEta, useNow } from './timing.ts'
+import { formatElapsed, useNow } from './timing.ts'
 
 export type { ProgressArgs } from './args.ts'
 
@@ -69,11 +70,10 @@ export function ProgressCard({ toolName, block, inspect, t, useSession }: Progre
     : 'kind' in block && block.callTime !== null
       ? Math.max(0, block.time - block.callTime)
       : null
-  // ETA only while running with a real reported percent (a frozen card has no
-  // remaining-time claim to make).
-  const etaMs = running && percent > 0 && percent < 100 && elapsedMs !== null
-    ? Math.round((elapsedMs * (100 - percent)) / percent)
-    : null
+  // ETA rides the model's own knowledge (args.eta): a rough remaining-time
+  // estimate the model can actually judge. No reported eta — no ETA row;
+  // linear extrapolation is not an estimate and is never shown.
+  const etaText = running ? etaOf(args) : null
 
   // Stage timeline: in-window report_progress calls sharing this card's task,
   // in report order. Only real task names correlate (the fallback title is
@@ -107,10 +107,10 @@ export function ProgressCard({ toolName, block, inspect, t, useSession }: Progre
             <span className={css.lineValue}>{formatElapsed(elapsedMs)}</span>
           </div>
         )}
-        {running && etaMs !== null && (
+        {running && etaText !== null && (
           <div className={css.line}>
             <span className={css.lineLabel}>{t('card.eta')}</span>
-            <span className={css.lineValue}>{formatEta(etaMs)}</span>
+            <span className={css.lineValue}>{etaText}</span>
           </div>
         )}
         {/* A multi-stage chain replaces the single stage line (its last row is this call's stage). */}

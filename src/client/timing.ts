@@ -21,14 +21,18 @@ export function formatElapsed(ms: number): string {
 }
 
 /**
- * Whole-second ETA: 45s / 2m42s. An estimate, so no sub-second precision.
+ * Whole-second ETA: 45s / 2m42s / 5h / 5h20m. An estimate, so no sub-second
+ * precision; hours kick in at the hour mark.
  * @param ms - remaining-time estimate in milliseconds.
  * @returns display string.
  */
 export function formatEta(ms: number): string {
   const s = Math.max(0, Math.round(ms / 1_000))
   if (s < 60) return `${s}s`
-  return `${Math.floor(s / 60)}m${s % 60}s`
+  if (s < 3600) return `${Math.floor(s / 60)}m${s % 60}s`
+  const hours = Math.floor(s / 3600)
+  const minutes = Math.floor((s % 3600) / 60)
+  return minutes > 0 ? `${hours}h${minutes}m` : `${hours}h`
 }
 
 /**

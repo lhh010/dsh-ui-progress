@@ -1,6 +1,6 @@
 {
   "name": "@dsh-external/dsh-ui-progress",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "private": true,
   "type": "module",
   "description": "DSH Web UI 任务进度插件：report_progress 工具动画卡片（左侧加载圈运行中旋转）+ 输入框停靠区常驻会话进度条，零核心改动。",
