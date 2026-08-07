@@ -178,10 +178,13 @@ export function SessionProgressBar({ session, t, useProjection }: SessionProgres
   // ETA rides the model's own knowledge — never extrapolated from the fill.
   const modelEta = running ? latestReportEta(session) : null
   const lastTurn = running ? null : lastTurnDuration(session)
+  // A session that has finished at least one turn rests in the success
+  // palette (light green); a never-run session keeps the neutral look.
+  const completed = !running && turn > 0
 
   return (
     <div className={css.dock} data-progress-bar>
-      <div className={css.bar} data-state={running ? 'running' : 'idle'}>
+      <div className={css.bar} data-state={running ? 'running' : completed ? 'done' : 'idle'}>
         <span className={clsx(css.glyph, running && css.glyphRunning)}>
           {running ? <IconLoadingOutline16 size={14} /> : <IconSparkle16 size={14} />}
         </span>

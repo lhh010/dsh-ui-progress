@@ -40,6 +40,22 @@
   animation: dsh-session-progress-glow 2s ease-in-out infinite;
 }
 
+/* Completed state (idle after at least one finished turn): the bar rests in
+   the success palette — light green background, green border/fill/glyph.
+   The running and never-run idle states are untouched. */
+.bar[data-state='done'] {
+  border-color: color-mix(in srgb, var(--dsw-alias-state-success-primary) 40%, transparent);
+  background: var(--dsw-alias-state-success-tertiary);
+}
+
+.bar[data-state='done'] .glyph {
+  color: var(--dsw-alias-state-success-primary);
+}
+
+.bar[data-state='done'] .fill {
+  background: var(--dsw-alias-state-success-primary);
+}
+
 @keyframes dsh-session-progress-glow {
   0%, 100% {
     box-shadow: 0 0 0 0 color-mix(in srgb, var(--dsw-alias-state-business-primary) 0%, transparent);
