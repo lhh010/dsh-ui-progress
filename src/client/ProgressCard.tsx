@@ -9,13 +9,15 @@
  * settled state freezes the final bar.
  *
  * Live chrome on top of the bar: while the call runs the card ticks an
- * elapsed readout and, when the model reports a rough remaining-time
- * estimate (args.eta), an ETA row; a settled call shows its total wall time.
- * No reported eta — no ETA row (unknown stays unknown). A failed result
- * (isError) switches the whole card to the error state — warning glyph,
- * error-tinted fill and copy. When several in-window calls share the same
- * task name, the card replaces the single stage line with the derived stage
- * timeline (chain of distinct reported stages).
+ * elapsed readout; a settled call shows its total wall time. When the model
+ * reports a rough remaining-time estimate (args.eta), an ETA row shows on
+ * running and settled-but-unfinished cards (an instant tool never shows a
+ * running frame, so the estimate stays visible on the settled card) and
+ * hides on done/failed cards. No reported eta — no ETA row (unknown stays
+ * unknown). A failed result (isError) switches the whole card to the error
+ * state — warning glyph, error-tinted fill and copy. When several in-window
+ * calls share the same task name, the card replaces the single stage line
+ * with the derived stage timeline (chain of distinct reported stages).
  */
 import {
   IconCheckOutline16,
@@ -72,8 +74,11 @@ export function ProgressCard({ toolName, block, inspect, t, useSession }: Progre
       : null
   // ETA rides the model's own knowledge (args.eta): a rough remaining-time
   // estimate the model can actually judge. No reported eta — no ETA row;
-  // linear extrapolation is not an estimate and is never shown.
-  const etaText = running ? etaOf(args) : null
+  // linear extrapolation is not an estimate and is never shown. The row
+  // stays on settled intermediate cards (a 20% report with "约5小时" remains
+  // visible after the call settles — instant tools never show a running
+  // frame), and hides on done/failed cards (the render guard below).
+  const etaText = etaOf(args)
 
   // Stage timeline: in-window report_progress calls sharing this card's task,
   // in report order. Only real task names correlate (the fallback title is
@@ -107,7 +112,7 @@ export function ProgressCard({ toolName, block, inspect, t, useSession }: Progre
             <span className={css.lineValue}>{formatElapsed(elapsedMs)}</span>
           </div>
         )}
-        {running && etaText !== null && (
+        {!failed && etaText !== null && (
           <div className={css.line}>
             <span className={css.lineLabel}>{t('card.eta')}</span>
             <span className={css.lineValue}>{etaText}</span>
