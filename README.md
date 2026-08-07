@@ -9,10 +9,11 @@ DSH Web UI 任务进度插件：为 DeepSeek Harness 的 Web GUI 提供两处进
 | 插件版本 | DSH 快照 | 说明 |
 | --- | --- | --- |
 | `v0.1.0` | `snapshots/20260805T134133Z-ce1fc03f95`（snapshot0805） | 旧构建，按旧安装方式（`~/.dsh/config.yaml` + `pnpm add -w link:`） |
-| `v0.2.0` | `snapshots/20260806T160212Z-279244acb0`（snapshot0806） | 同快照上一构建（无耗时/ETA/失败态/阶段时间线） |
-| `v0.3.0`（默认） | `snapshots/20260806T160212Z-279244acb0`（snapshot0806） | 新构建，按新安装方式（`dsh plugin --profile web add` + profile `cordis.patch.yml`） |
+| `v0.2.0` | `snapshots/20260806T160212Z-279244acb0`（snapshot0806） | 同快照早期构建（无耗时/ETA/失败态/阶段时间线） |
+| `v0.3.0` | `snapshots/20260806T160212Z-279244acb0`（snapshot0806） | 同快照上一构建（卡片耗时/ETA 文案插值缺失） |
+| `v0.3.1`（默认） | `snapshots/20260806T160212Z-279244acb0`（snapshot0806） | 新构建，按新安装方式（`dsh plugin --profile web add` + profile `cordis.patch.yml`） |
 
-> git 依赖方式固定 tag：`pnpm add '@dsh-external/dsh-ui-progress@github:dsh-external/dsh-ui-progress#v0.3.0'`（0805 用户用 `#v0.1.0`）。
+> git 依赖方式固定 tag：`pnpm add '@dsh-external/dsh-ui-progress@github:dsh-external/dsh-ui-progress#v0.3.1'`（0805 用户用 `#v0.1.0`）。
 
 ## 功能
 

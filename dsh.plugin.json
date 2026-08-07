@@ -1,6 +1,6 @@
 {
   "id": "@dsh-external/dsh-ui-progress",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "main": "./lib/index.js",
   "description": "DSH Web UI 任务进度插件：report_progress 工具动画卡片 + 输入框停靠区常驻会话进度条，运行中加载圈旋转",
   "engines": {
