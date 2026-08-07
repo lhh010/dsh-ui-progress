@@ -12,6 +12,11 @@
  * reads 40%); without one, each settled tool result advances the bar by one
  * segment as a bounded heuristic. Animation follows the state: a spinning
  * glyph and shimmer glide while running, a static filled bar when idle.
+ *
+ * While running, the strip also shows a live elapsed readout (since the
+ * current turn started) and, when the fill reflects real todo completion, an
+ * ETA extrapolated from progress × elapsed — the segment heuristic carries
+ * no time meaning, so it never yields an ETA.
  */
 import { IconLoadingOutline16, IconSparkle16 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { ConversationSnapshot, TodoItem } from '@deepseek-ai/dsh-client-runtime/client'
@@ -19,6 +24,7 @@ import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
 import clsx from 'clsx'
 import type { ReactNode } from 'react'
 import css from './SessionProgressBar.module.css'
+import { formatElapsed, formatEta, useNow } from './timing.ts'
 
 /** Dock entry props: InputZone owner share + session standard kit + locale seat. */
 export type SessionProgressBarProps = import('@deepseek-ai/dsh-client-ui-slots').PropsRuntime<'conversation.input.dock'> & PropsLocale<'progress'>
@@ -48,6 +54,30 @@ function isReasoning(snapshot: ConversationSnapshot): boolean {
 /** The in-flight tool name when running; undefined when nothing is executing. */
 function runningTool(snapshot: ConversationSnapshot): string | undefined {
   return snapshot.runningCalls[0]?.name
+}
+
+/**
+ * Start time of the running turn — the in-window turn entry with no end yet.
+ * Null when running but no in-window turn start exists.
+ */
+function runningTurnStart(snapshot: ConversationSnapshot): number | null {
+  let start: number | null = null
+  for (const timing of snapshot.turnTimings.values()) {
+    if (timing.endTime === undefined) start = timing.startTime
+  }
+  return start
+}
+
+/**
+ * Wall duration of the last settled in-window turn; null when no turn has
+ * finished yet. Only read while idle (the running turn has no end entry).
+ */
+function lastTurnDuration(snapshot: ConversationSnapshot): number | null {
+  let duration: number | null = null
+  for (const timing of snapshot.turnTimings.values()) {
+    if (timing.endTime !== undefined) duration = Math.max(0, timing.endTime - timing.startTime)
+  }
+  return duration
 }
 
 /** Completed/active/total from a live todos projection; null when unavailable or empty. */
@@ -96,7 +126,9 @@ function stateLabel(
 /**
  * Resident progress strip. Renders nothing until a session snapshot exists
  * (the no-session hero has no dock content), then shows the state text, the
- * animated fill bar with a live percent readout, and the turn/tool counters.
+ * animated fill bar with a live percent readout, the turn/tool counters, and
+ * — while running — the live elapsed and the todos-based ETA (or the last
+ * settled turn's duration when idle).
  */
 export function SessionProgressBar({ session, t, useProjection }: SessionProgressBarProps) {
   // Defensive guard: InputZone.session is typed non-null, but a host passing
@@ -111,6 +143,15 @@ export function SessionProgressBar({ session, t, useProjection }: SessionProgres
   const percent = progressPercent(session, todos)
   const turn = session.turnTimings.size
   const settled = settledToolCount(session)
+  const turnStart = runningTurnStart(session)
+  const now = useNow(running)
+  const elapsed = turnStart !== null ? Math.max(0, now - turnStart) : null
+  // ETA needs a time-meaningful fill: the todos ratio only (the segment
+  // heuristic is a bounded visual, not elapsed-proportional work).
+  const eta = running && elapsed !== null && counts !== null && percent > 0 && percent < 100
+    ? Math.round((elapsed * (100 - percent)) / percent)
+    : null
+  const lastTurn = running ? null : lastTurnDuration(session)
 
   return (
     <div className={css.dock} data-progress-bar>
@@ -127,6 +168,9 @@ export function SessionProgressBar({ session, t, useProjection }: SessionProgres
           {running && <div className={css.shimmer} />}
         </div>
         <span className={css.percent}>{percent}%</span>
+        {running && eta !== null && <span className={css.eta}>{t('bar.eta', { duration: formatEta(eta) })}</span>}
+        {running && elapsed !== null && <span className={css.counter}>{t('bar.elapsed', { duration: formatElapsed(elapsed) })}</span>}
+        {!running && lastTurn !== null && <span className={css.counter}>{t('bar.lastTurn', { duration: formatElapsed(lastTurn) })}</span>}
         <span className={css.counter}>{t('bar.turn', { turn })}</span>
         <span className={css.counter}>{t('bar.tools', { count: settled })}</span>
       </div>

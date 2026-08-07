@@ -4,8 +4,12 @@
 export const zh = {
   'card.title': '任务进度',
   'card.done': '完成',
+  'card.error': '失败',
   'card.stage': '阶段',
   'card.note': '备注',
+  'card.stages': '阶段链',
+  'card.elapsed': '耗时 {duration}',
+  'card.eta': '预计剩余 {duration}',
   'card.empty': '（无进度数据）',
   'bar.idle': '会话就绪',
   'bar.running': '正在执行',
@@ -15,6 +19,9 @@ export const zh = {
   'bar.tools': '{count} 个工具调用',
   'bar.tool': '工具 {name}',
   'bar.waiting': '等待输入',
+  'bar.elapsed': '已耗时 {duration}',
+  'bar.eta': '预计剩余 {duration}',
+  'bar.lastTurn': '上回合 {duration}',
 } satisfies Record<string, string>
 
 /** The progress namespace key union. */
@@ -24,8 +31,12 @@ export type ProgressKey = keyof typeof zh
 export const en = {
   'card.title': 'Task progress',
   'card.done': 'Done',
+  'card.error': 'Failed',
   'card.stage': 'Stage',
   'card.note': 'Note',
+  'card.stages': 'Stages',
+  'card.elapsed': 'Elapsed {duration}',
+  'card.eta': 'ETA {duration}',
   'card.empty': '(no progress data)',
   'bar.idle': 'Session idle',
   'bar.running': 'Executing',
@@ -35,4 +46,7 @@ export const en = {
   'bar.tools': '{count} tool calls',
   'bar.tool': 'Tool {name}',
   'bar.waiting': 'Waiting for input',
+  'bar.elapsed': 'Elapsed {duration}',
+  'bar.eta': 'ETA {duration}',
+  'bar.lastTurn': 'Last turn {duration}',
 } satisfies Record<ProgressKey, string>

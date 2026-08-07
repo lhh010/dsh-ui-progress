@@ -36,6 +36,11 @@
   animation: dsh-progress-spin 1s linear infinite;
 }
 
+/* Failed call: the warning glyph takes the error tint. */
+.leadingError {
+  color: var(--dsw-alias-state-error-primary);
+}
+
 @keyframes dsh-progress-spin {
   to {
     transform: rotate(360deg);
@@ -63,6 +68,10 @@
 
 .statusDone {
   color: var(--dsw-alias-state-success-primary);
+}
+
+.statusError {
+  color: var(--dsw-alias-state-error-primary);
 }
 
 .inspect {
@@ -116,6 +125,10 @@
   font-weight: 600;
 }
 
+.percentError {
+  color: var(--dsw-alias-state-error-primary);
+}
+
 /* Track + fill: width transition is the bar easing. */
 .track {
   position: relative;
@@ -143,6 +156,11 @@
 .fillDone {
   background: var(--dsw-alias-state-success-primary);
   animation: dsh-progress-glow 1.6s ease-in-out infinite;
+}
+
+/* Failed fill: static error color — the failure is terminal, no pulse. */
+.fillError {
+  background: var(--dsw-alias-state-error-primary);
 }
 
 @keyframes dsh-progress-glow {
@@ -198,4 +216,55 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   color: var(--dsw-alias-label-secondary);
+}
+
+/* Stage timeline: a compact chain of distinct reported stages for one task,
+   replacing the single stage line once two or more stages are in-window. */
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.timelineLabel {
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+.timelineRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.timelineDot {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--dsw-alias-state-business-tertiary);
+}
+
+/* The chain's last row is the current stage — dot takes the brand color. */
+.timelineDotCurrent {
+  background: var(--dsw-alias-brand-primary);
+}
+
+.timelineStage {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--dsw-alias-label-secondary);
+}
+
+.timelinePercent {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+  color: var(--dsw-alias-label-tertiary);
 }
