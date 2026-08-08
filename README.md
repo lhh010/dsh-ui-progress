@@ -13,9 +13,9 @@ DSH Web UI 任务进度插件：为 DeepSeek Harness 的 Web GUI 提供两处进
 | `v0.3.0` | `snapshots/20260806T160212Z-279244acb0`（snapshot0806） | 同快照上一构建（卡片耗时/ETA 文案插值缺失） |
 | `v0.3.1` | `snapshots/20260806T160212Z-279244acb0`（snapshot0806） | 同快照上一构建（ETA 为线性外推） |
 | `v0.4.0` | `snapshots/20260806T160212Z-279244acb0`（snapshot0806） | 同快照上一构建（ETA 仅来自模型上报） |
-| `v0.5.0` | `snapshots/20260806T160212Z-279244acb0`（snapshot0806） | 同快照上一构建：自带工具 + 上报引导 |
-| `v0.5.1` | `snapshots/20260806T160212Z-279244acb0`（snapshot0806） | 同快照上一构建：会话完成进度条浅绿色 |
-| `v0.6.0`（默认） | `snapshots/20260806T160212Z-279244acb0`（snapshot0806） | 新构建：已耗时 0.1s 步进（满分钟折叠）+ subagent 待办琥珀提示 |
+| `v0.5.0` | `snapshots/20260807T130646Z-e8a0f1a758`（snapshot0807） | 同快照上一构建：自带工具 + 上报引导 |
+| `v0.5.1` | `snapshots/20260807T130646Z-e8a0f1a758`（snapshot0807） | 同快照上一构建：会话完成进度条浅绿色 |
+| `v0.6.0`（默认） | `snapshots/20260807T130646Z-e8a0f1a758`（snapshot0807） | 新构建：已耗时 0.1s 步进（满分钟折叠）+ subagent 待办琥珀提示 |
 
 > git 依赖方式固定 tag：`pnpm add '@dsh-external/dsh-ui-progress@github:dsh-external/dsh-ui-progress#v0.6.0'`（0805 用户用 `#v0.1.0`）。
 
