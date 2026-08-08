@@ -22,6 +22,13 @@ export const zh = {
   'bar.elapsed': '已耗时 {duration}',
   'bar.eta': '预计剩余 {duration}',
   'bar.lastTurn': '上回合 {duration}',
+  'bar.pendingApproval': '等待审批',
+  'bar.pendingQuestion': '需要选择',
+  'bar.pendingPlan': '等待计划审阅',
+  'bar.pendingSubagentApproval': '子代理等待审批',
+  'bar.pendingSubagentQuestion': '子代理需要选择',
+  'bar.pendingSubagentPlan': '子代理等待计划审阅',
+  'bar.pendingSubagentCount': '子代理 {count} 项待处理',
 } satisfies Record<string, string>
 
 /** The progress namespace key union. */
@@ -49,4 +56,11 @@ export const en = {
   'bar.elapsed': 'Elapsed {duration}',
   'bar.eta': 'ETA {duration}',
   'bar.lastTurn': 'Last turn {duration}',
+  'bar.pendingApproval': 'Awaiting approval',
+  'bar.pendingQuestion': 'Needs selection',
+  'bar.pendingPlan': 'Awaiting plan review',
+  'bar.pendingSubagentApproval': 'Subagent awaiting approval',
+  'bar.pendingSubagentQuestion': 'Subagent needs selection',
+  'bar.pendingSubagentPlan': 'Subagent awaiting plan review',
+  'bar.pendingSubagentCount': 'Subagent {count} pending',
 } satisfies Record<ProgressKey, string>

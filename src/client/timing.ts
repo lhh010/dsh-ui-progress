@@ -8,15 +8,16 @@
 import { useEffect, useState } from 'react'
 
 /**
- * Compact duration: 45.2s under a minute, 2m42s from there on (same shape as
- * the conversation stats strip).
+ * Compact duration: one decimal always under a minute (17.0s, 3.4s), folded
+ * whole-second steps from the minute mark on (1m0s, 2m42s). The fold check
+ * uses the rounded tenth so 59.96s reads 1m0s instead of 60.0s.
  * @param ms - duration in milliseconds.
  * @returns display string.
  */
 export function formatElapsed(ms: number): string {
-  const s = ms / 1_000
-  if (s < 60) return `${Math.round(s * 10) / 10}s`
-  const whole = Math.round(s)
+  const tenths = Math.round(ms / 100) / 10
+  if (tenths < 60) return `${tenths.toFixed(1)}s`
+  const whole = Math.round(tenths)
   return `${Math.floor(whole / 60)}m${whole % 60}s`
 }
 
@@ -36,20 +37,35 @@ export function formatEta(ms: number): string {
 }
 
 /**
- * Ticking clock: Date.now() refreshed once per second while `enabled`, frozen
- * otherwise (callers gate reads on the same flag). The effect ticks once
- * immediately on enable so a resumed readout is not stale for up to a second.
+ * Ticking clock: Date.now() refreshed at the rate the elapsed display
+ * needs — every 100ms while the elapsed since `start` is under a minute
+ * (0.1s steps), once per second from the minute mark on (folded 1s steps).
+ * Frozen when disabled or anchorless; callers gate reads on the same flags.
+ * The effect ticks once immediately on enable so a resumed readout is not
+ * stale for up to one interval.
  * @param enabled - whether the clock should tick.
+ * @param start - epoch-ms anchor the elapsed is measured from (turn start,
+ *   call time); null disables the clock.
  * @returns the latest epoch-ms timestamp.
  */
-export function useNow(enabled: boolean): number {
+export function useNow(enabled: boolean, start: number | null): number {
   const [now, setNow] = useState(() => Date.now())
   useEffect(() => {
-    if (!enabled) return
-    const tick = () => setNow(Date.now())
+    if (!enabled || start === null) return
+    let alive = true
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const tick = (): void => {
+      if (!alive) return
+      setNow(Date.now())
+      // 0.1s steps below a minute, folded 1s steps from the minute mark on.
+      const delay = Date.now() - start < 60_000 ? 100 : 1_000
+      timer = setTimeout(tick, delay)
+    }
     tick()
-    const id = setInterval(tick, 1_000)
-    return () => clearInterval(id)
-  }, [enabled])
+    return () => {
+      alive = false
+      if (timer !== undefined) clearTimeout(timer)
+    }
+  }, [enabled, start])
   return now
 }

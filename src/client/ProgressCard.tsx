@@ -66,7 +66,7 @@ export function ProgressCard({ toolName, block, inspect, t, useSession }: Progre
 
   // Live elapsed: now − call time while running; result time − call time once
   // settled (callTime is null when window truncation left the call outside).
-  const now = useNow(running)
+  const now = useNow(running, running ? block.time : null)
   const elapsedMs = running
     ? Math.max(0, now - block.time)
     : 'kind' in block && block.callTime !== null

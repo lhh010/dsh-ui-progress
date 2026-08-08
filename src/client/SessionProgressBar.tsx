@@ -18,9 +18,16 @@
  * own knowledge — the latest in-window `report_progress` call's `eta`
  * argument (a rough remaining-time estimate). When the model has not
  * reported one, no ETA shows (unknown stays unknown).
+ *
+ * Attention state: when this session or any descendant subagent session
+ * waits on a human interaction (approval / question / plan review), the bar
+ * switches to the amber warning palette and the label names the wait —
+ * subagent waits surface through the global session list (`origin:
+ * 'subagent'` rows carry `pendingInteraction`; the sidebar hides them, so
+ * this strip is where the main agent surfaces them).
  */
 import { IconLoadingOutline16, IconSparkle16 } from '@deepseek-ai/dsh-client-ui-primitives'
-import type { ConversationSnapshot, TodoItem } from '@deepseek-ai/dsh-client-runtime/client'
+import type { ConversationSnapshot, SessionId, SessionSummary, TodoItem } from '@deepseek-ai/dsh-client-runtime/client'
 import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
 import clsx from 'clsx'
 import type { ReactNode } from 'react'
@@ -121,6 +128,74 @@ function todoCounts(todos: readonly TodoItem[] | null | undefined): { done: numb
   return { done, active, total: todos.length }
 }
 
+/** Pending human interactions of this session's subagent subtree, by kind. */
+export interface SubagentPending {
+  approvals: number
+  questions: number
+  plans: number
+}
+
+const NO_SUBAGENT_PENDING: SubagentPending = Object.freeze({ approvals: 0, questions: 0, plans: 0 })
+
+/**
+ * Walk the session list from the given root down its `parentId` chain and
+ * count pending human interactions on subagent sessions. The sidebar hides
+ * subagent rows; the global list still carries them, so the main strip can
+ * surface their waits.
+ * @param byId - the global session-list index.
+ * @param rootId - the strip's owning session id.
+ * @returns pending counts per kind across the whole subtree.
+ */
+function subagentPendingState(byId: Record<SessionId, SessionSummary>, rootId: SessionId): SubagentPending {
+  const children = new Map<SessionId, SessionId[]>()
+  for (const [sid, row] of Object.entries(byId)) {
+    if (row.parentId === undefined || row.origin !== 'subagent') continue
+    const list = children.get(row.parentId) ?? []
+    list.push(sid as SessionId)
+    children.set(row.parentId, list)
+  }
+  const seen = new Set<SessionId>([rootId])
+  const queue: SessionId[] = [rootId]
+  let approvals = 0
+  let questions = 0
+  let plans = 0
+  while (queue.length > 0) {
+    const id = queue.shift() as SessionId
+    for (const childId of children.get(id) ?? []) {
+      if (seen.has(childId)) continue
+      seen.add(childId)
+      queue.push(childId)
+      const status = byId[childId]?.pendingInteraction
+      if (status === 'approval') approvals += 1
+      else if (status === 'question') questions += 1
+      else if (status === 'plan-review') plans += 1
+    }
+  }
+  return { approvals, questions, plans }
+}
+
+/**
+ * The attention label: this session's own wait (approval/question) plus the
+ * subagent subtree's waits, combined with a separator when both exist.
+ */
+function pendingLabel(
+  ownKind: 'approval' | 'question' | null,
+  sub: SubagentPending,
+  t: SessionProgressBarProps['t'],
+): string {
+  const ownText = ownKind === 'approval' ? t('bar.pendingApproval') : ownKind === 'question' ? t('bar.pendingQuestion') : null
+  const total = sub.approvals + sub.questions + sub.plans
+  let subText: string | null = null
+  if (total > 0) {
+    if (total === 1 && sub.approvals === 1) subText = t('bar.pendingSubagentApproval')
+    else if (total === 1 && sub.questions === 1) subText = t('bar.pendingSubagentQuestion')
+    else if (total === 1 && sub.plans === 1) subText = t('bar.pendingSubagentPlan')
+    else subText = t('bar.pendingSubagentCount', { count: total })
+  }
+  if (ownText !== null && subText !== null) return `${ownText} · ${subText}`
+  return ownText ?? subText ?? ''
+}
+
 /**
  * The bar's progress value in 0..100. A live `todos` projection wins: the
  * (completed + in-progress)/total ratio is the real task completion — the
@@ -157,9 +232,11 @@ function stateLabel(
  * (the no-session hero has no dock content), then shows the state text, the
  * animated fill bar with a live percent readout, the turn/tool counters, and
  * — while running — the live elapsed plus the model-reported ETA (or the
- * last settled turn's duration when idle).
+ * last settled turn's duration when idle). Pending human interactions (this
+ * session or its subagent subtree) override every other state with the amber
+ * attention palette.
  */
-export function SessionProgressBar({ session, t, useProjection }: SessionProgressBarProps) {
+export function SessionProgressBar({ session, t, useProjection, useSessions }: SessionProgressBarProps) {
   // Defensive guard: InputZone.session is typed non-null, but a host passing
   // no session must degrade to an empty dock instead of crashing.
   // oxlint-disable-next-line typescript/no-unnecessary-condition
@@ -173,7 +250,7 @@ export function SessionProgressBar({ session, t, useProjection }: SessionProgres
   const turn = session.turnTimings.size
   const settled = settledToolCount(session)
   const turnStart = runningTurnStart(session)
-  const now = useNow(running)
+  const now = useNow(running, turnStart)
   const elapsed = turnStart !== null ? Math.max(0, now - turnStart) : null
   // ETA rides the model's own knowledge — never extrapolated from the fill.
   const modelEta = running ? latestReportEta(session) : null
@@ -181,20 +258,27 @@ export function SessionProgressBar({ session, t, useProjection }: SessionProgres
   // A session that has finished at least one turn rests in the success
   // palette (light green); a never-run session keeps the neutral look.
   const completed = !running && turn > 0
+  // Attention state: this session's own pending waits plus the subagent
+  // subtree's (the sidebar hides subagent rows — this strip surfaces them).
+  const ownPending = session.pending[0]?.kind ?? null
+  const subPending = subagentPendingState(useSessions(s => s.byId), session.sessionId)
+  const pending = ownPending !== null || subPending.approvals + subPending.questions + subPending.plans > 0
 
   return (
     <div className={css.dock} data-progress-bar>
-      <div className={css.bar} data-state={running ? 'running' : completed ? 'done' : 'idle'}>
+      <div className={css.bar} data-state={pending ? 'pending' : running ? 'running' : completed ? 'done' : 'idle'}>
         <span className={clsx(css.glyph, running && css.glyphRunning)}>
           {running ? <IconLoadingOutline16 size={14} /> : <IconSparkle16 size={14} />}
         </span>
-        <span className={css.label}>{stateLabel(session, toolName, thinking, counts, t)}</span>
+        <span className={css.label}>
+          {pending ? pendingLabel(ownPending, subPending, t) : stateLabel(session, toolName, thinking, counts, t)}
+        </span>
         <div className={css.track} role="progressbar" aria-valuenow={percent} aria-valuemin={0} aria-valuemax={100}>
           <div
             className={clsx(css.fill, running && css.fillRunning)}
             style={{ width: `${percent}%` }}
           />
-          {running && <div className={css.shimmer} />}
+          {running && !pending && <div className={css.shimmer} />}
         </div>
         <span className={css.percent}>{percent}%</span>
         {running && modelEta !== null && <span className={css.eta}>{t('bar.eta', { duration: modelEta })}</span>}

@@ -56,6 +56,33 @@
   background: var(--dsw-alias-state-success-primary);
 }
 
+/* Pending state: this session or a descendant subagent waits on a human
+   interaction (approval / selection / plan review). The bar switches to the
+   amber warning palette with a slow attention pulse; it outranks every
+   other state so the wait cannot be missed. */
+.bar[data-state='pending'] {
+  border-color: color-mix(in srgb, var(--dsw-alias-state-warn-primary) 40%, transparent);
+  background: var(--dsw-alias-state-warn-tertiary);
+  animation: dsh-session-progress-warn-glow 1.6s ease-in-out infinite;
+}
+
+.bar[data-state='pending'] .glyph {
+  color: var(--dsw-alias-state-warn-primary);
+}
+
+.bar[data-state='pending'] .fill {
+  background: var(--dsw-alias-state-warn-primary);
+}
+
+@keyframes dsh-session-progress-warn-glow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--dsw-alias-state-warn-primary) 0%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 10px 1px color-mix(in srgb, var(--dsw-alias-state-warn-primary) 30%, transparent);
+  }
+}
+
 @keyframes dsh-session-progress-glow {
   0%, 100% {
     box-shadow: 0 0 0 0 color-mix(in srgb, var(--dsw-alias-state-business-primary) 0%, transparent);
