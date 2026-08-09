@@ -23,18 +23,12 @@ importers:
       '@deepseek-ai/dsh-client-ui-slots':
         specifier: link:../.dsh/source/current/packages/client/ui-slots
         version: link:../.dsh/source/current/packages/client/ui-slots
-      '@deepseek-ai/dsh-client-ui-tool':
-        specifier: link:../.dsh/source/current/packages/client/ui-tool
-        version: link:../.dsh/source/current/packages/client/ui-tool
       '@deepseek-ai/dsh-invariants':
         specifier: link:../.dsh/source/current/packages/support/invariants
         version: link:../.dsh/source/current/packages/support/invariants
       '@deepseek-ai/dsh-tool-todo':
         specifier: link:../.dsh/source/current/packages/todo/tool-todo
         version: link:../.dsh/source/current/packages/todo/tool-todo
-      '@deepseek-ai/dsh-tools':
-        specifier: link:../.dsh/source/current/packages/core/tools
-        version: link:../.dsh/source/current/packages/core/tools
       '@types/react':
         specifier: ~18.3.1
         version: 18.3.31

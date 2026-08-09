@@ -1,13 +1,13 @@
 {
   "id": "@dsh-external/dsh-ui-progress",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "main": "./lib/index.js",
-  "description": "DSH Web UI 任务进度插件：report_progress 工具动画卡片 + 输入框停靠区常驻会话进度条，运行中加载圈旋转",
+  "description": "DSH Web UI 会话进度插件：输入框停靠区常驻会话进度条，运行中加载圈旋转，中断（手动/意外）橘红态",
   "engines": {
     "dsh": ">=0.0.1"
   },
   "contributes": {
-    "tools": ["report_progress"],
+    "tools": [],
     "skills": []
   },
   "client": {
@@ -15,8 +15,7 @@
     "inject": [
       "@deepseek-ai/dsh-client-locale",
       "@deepseek-ai/dsh-client-runtime",
-      "@deepseek-ai/dsh-client-ui-conversation",
-      "@deepseek-ai/dsh-client-ui-tool"
+      "@deepseek-ai/dsh-client-ui-conversation"
     ]
   }
 }
