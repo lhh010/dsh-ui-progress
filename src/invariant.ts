@@ -15,8 +15,8 @@ export const name = 'dsh-ui-progress-invariant'
 export const inject = ['invariants']
 
 /**
- * No runtime invariant: the toolview slot registration is an effect owned
- * and observed by the slot registry; the host side has no runtime state.
+ * No runtime invariant: the dock registration is an effect owned and
+ * observed by the slot registry; the host side has no runtime state.
  */
 const install: InvariantInstaller = () => {}
 

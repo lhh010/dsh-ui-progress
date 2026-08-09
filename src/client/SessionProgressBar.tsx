@@ -9,9 +9,10 @@
  * in flight, whether the model is emitting reasoning, and the task
  * completion ratio. Progress follows the truth order: a live todos list wins
  * (completed/total is the real task completion — five tasks with two done
- * reads 40%); without one, each settled tool result advances the bar by one
- * segment as a bounded heuristic. Animation follows the state: a spinning
- * glyph and shimmer glide while running, a static filled bar when idle.
+ * reads 40%); without one the fill rests at its 100% default, because
+ * session-overall progress has no dedicated projection and a fake percentage
+ * is worse than none. Animation follows the state: a spinning glyph and
+ * shimmer glide while running, a static filled bar when idle.
  *
  * While running, the strip also shows a live elapsed readout (since the
  * current turn started). The ETA is never extrapolated: it rides the model's
@@ -25,108 +26,27 @@
  * subagent waits surface through the global session list (`origin:
  * 'subagent'` rows carry `pendingInteraction`; the sidebar hides them, so
  * this strip is where the main agent surfaces them).
+ *
+ * Interrupted state: when the session's latest completed turn was stopped —
+ * a manual stop, an API failure, or another unexpected break — the bar
+ * switches to the orange-red palette with a slow pulse and the label reads
+ * 已中断. Only the latest completed turn is judged (by its turn/end seq), so
+ * an interruption followed by a clean turn does not keep the bar orange.
  */
-import { IconLoadingOutline16, IconSparkle16 } from '@deepseek-ai/dsh-client-ui-primitives'
-import type { ConversationSnapshot, SessionId, SessionSummary, TodoItem } from '@deepseek-ai/dsh-client-runtime/client'
+import { IconLoadingOutline16, IconSparkle16, IconWarningOutline16 } from '@deepseek-ai/dsh-client-ui-primitives'
+import type { SessionId, SessionSummary } from '@deepseek-ai/dsh-client-runtime/client'
 import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
 import clsx from 'clsx'
 import type { ReactNode } from 'react'
-import { etaOf, parseArgs } from './args.ts'
 import css from './SessionProgressBar.module.css'
+import {
+  isReasoning, lastTurnDuration, latestReportEta, latestTurnInterrupted, progressPercent,
+  runningTool, runningTurnStart, settledToolCount, todoCounts,
+} from './session-state.ts'
 import { formatElapsed, useNow } from './timing.ts'
 
 /** Dock entry props: InputZone owner share + session standard kit + locale seat. */
 export type SessionProgressBarProps = import('@deepseek-ai/dsh-client-ui-slots').PropsRuntime<'conversation.input.dock'> & PropsLocale<'progress'>
-
-/**
- * Count settled tool results in the current snapshot window. The node stream
- * is the presentation-truth source: a result node exists exactly when a tool
- * call completed (and re-renders live as the window advances).
- */
-function settledToolCount(snapshot: ConversationSnapshot): number {
-  let count = 0
-  for (const node of snapshot.nodes) {
-    if (node.kind === 'tool-result') count += 1
-  }
-  return count
-}
-
-/**
- * True while the model is emitting reasoning: the in-flight partial carries a
- * reasoning block and no tool call is in flight (a running tool is the more
- * specific state and wins the label).
- */
-function isReasoning(snapshot: ConversationSnapshot): boolean {
-  return snapshot.partial?.blocks.some(block => block.kind === 'reasoning') ?? false
-}
-
-/** The in-flight tool name when running; undefined when nothing is executing. */
-function runningTool(snapshot: ConversationSnapshot): string | undefined {
-  return snapshot.runningCalls[0]?.name
-}
-
-/**
- * Start time of the running turn — the in-window turn entry with no end yet.
- * Null when running but no in-window turn start exists.
- */
-function runningTurnStart(snapshot: ConversationSnapshot): number | null {
-  let start: number | null = null
-  for (const timing of snapshot.turnTimings.values()) {
-    if (timing.endTime === undefined) start = timing.startTime
-  }
-  return start
-}
-
-/**
- * Wall duration of the last settled in-window turn; null when no turn has
- * finished yet. Only read while idle (the running turn has no end entry).
- */
-function lastTurnDuration(snapshot: ConversationSnapshot): number | null {
-  let duration: number | null = null
-  for (const timing of snapshot.turnTimings.values()) {
-    if (timing.endTime !== undefined) duration = Math.max(0, timing.endTime - timing.startTime)
-  }
-  return duration
-}
-
-/**
- * The model-reported ETA display string from the LATEST in-window
- * `report_progress` call (running or settled, by report time). The latest
- * report is the model's last word: if it carries no eta, the strip shows no
- * ETA even when an older report did.
- */
-function latestReportEta(snapshot: ConversationSnapshot): string | null {
-  let latestTime = -1
-  let latestEta: string | null = null
-  for (const node of snapshot.nodes) {
-    if (node.kind !== 'tool-result' || node.call?.name !== 'report_progress') continue
-    const time = node.callTime ?? node.time
-    if (time >= latestTime) {
-      latestTime = time
-      latestEta = etaOf(parseArgs(node.call.argsRaw))
-    }
-  }
-  for (const call of snapshot.runningCalls) {
-    if (call.name !== 'report_progress') continue
-    if (call.time >= latestTime) {
-      latestTime = call.time
-      latestEta = etaOf(parseArgs(call.argsRaw))
-    }
-  }
-  return latestEta
-}
-
-/** Completed/active/total from a live todos projection; null when unavailable or empty. */
-function todoCounts(todos: readonly TodoItem[] | null | undefined): { done: number; active: number; total: number } | null {
-  if (todos === undefined || todos === null || todos.length === 0) return null
-  let done = 0
-  let active = 0
-  for (const item of todos) {
-    if (item.status === 'completed') done += 1
-    else if (item.status === 'in_progress') active += 1
-  }
-  return { done, active, total: todos.length }
-}
 
 /** Pending human interactions of this session's subagent subtree, by kind. */
 export interface SubagentPending {
@@ -134,8 +54,6 @@ export interface SubagentPending {
   questions: number
   plans: number
 }
-
-const NO_SUBAGENT_PENDING: SubagentPending = Object.freeze({ approvals: 0, questions: 0, plans: 0 })
 
 /**
  * Walk the session list from the given root down its `parentId` chain and
@@ -196,29 +114,15 @@ function pendingLabel(
   return ownText ?? subText ?? ''
 }
 
-/**
- * The bar's progress value in 0..100. A live `todos` projection wins: the
- * (completed + in-progress)/total ratio is the real task completion — the
- * in-flight task counts toward progress, so five tasks with two done and one
- * in progress reads 60%. Without one, each settled tool result advances the
- * bar by one fixed segment (window cap 10), a visually bounded heuristic for
- * sessions that never write a todo list.
- */
-function progressPercent(snapshot: ConversationSnapshot, todos: readonly TodoItem[] | null | undefined): number {
-  const counts = todoCounts(todos)
-  if (counts !== null) return Math.round(((counts.done + counts.active) / counts.total) * 100)
-  return Math.min(100, settledToolCount(snapshot) * 10)
-}
-
 /** Human label for the current state; null means the dock row renders no text. */
 function stateLabel(
-  snapshot: ConversationSnapshot,
+  running: boolean,
   runningToolName: string | undefined,
   thinking: boolean,
   counts: { done: number; active: number; total: number } | null,
   t: SessionProgressBarProps['t'],
 ): ReactNode {
-  if (snapshot.running) {
+  if (running) {
     if (runningToolName !== undefined) return t('bar.tool', { name: runningToolName })
     if (thinking) return t('bar.thinking')
     return t('bar.running')
@@ -233,8 +137,8 @@ function stateLabel(
  * animated fill bar with a live percent readout, the turn/tool counters, and
  * — while running — the live elapsed plus the model-reported ETA (or the
  * last settled turn's duration when idle). Pending human interactions (this
- * session or its subagent subtree) override every other state with the amber
- * attention palette.
+ * session or its subagent subtree) and interrupted stops (manual or
+ * unexpected) each override the plain states with their attention palette.
  */
 export function SessionProgressBar({ session, t, useProjection, useSessions }: SessionProgressBarProps) {
   // Defensive guard: InputZone.session is typed non-null, but a host passing
@@ -263,15 +167,22 @@ export function SessionProgressBar({ session, t, useProjection, useSessions }: S
   const ownPending = session.pending[0]?.kind ?? null
   const subPending = subagentPendingState(useSessions(s => s.byId), session.sessionId)
   const pending = ownPending !== null || subPending.approvals + subPending.questions + subPending.plans > 0
+  // Interrupted state: the latest completed turn was stopped (manual stop,
+  // API failure, or another unexpected break) — orange-red, outranks the
+  // running/done rests so the stop cannot be missed.
+  const interrupted = !running && latestTurnInterrupted(session)
 
   return (
     <div className={css.dock} data-progress-bar>
-      <div className={css.bar} data-state={pending ? 'pending' : running ? 'running' : completed ? 'done' : 'idle'}>
+      <div
+        className={css.bar}
+        data-state={pending ? 'pending' : running ? 'running' : interrupted ? 'interrupted' : completed ? 'done' : 'idle'}
+      >
         <span className={clsx(css.glyph, running && css.glyphRunning)}>
-          {running ? <IconLoadingOutline16 size={14} /> : <IconSparkle16 size={14} />}
+          {running ? <IconLoadingOutline16 size={14} /> : interrupted ? <IconWarningOutline16 size={14} /> : <IconSparkle16 size={14} />}
         </span>
         <span className={css.label}>
-          {pending ? pendingLabel(ownPending, subPending, t) : stateLabel(session, toolName, thinking, counts, t)}
+          {pending ? pendingLabel(ownPending, subPending, t) : interrupted ? t('bar.interrupted') : stateLabel(running, toolName, thinking, counts, t)}
         </span>
         <div className={css.track} role="progressbar" aria-valuenow={percent} aria-valuemin={0} aria-valuemax={100}>
           <div

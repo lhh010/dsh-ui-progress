@@ -2,15 +2,6 @@
 
 /** Simplified Chinese dictionary (the key-set source of truth). */
 export const zh = {
-  'card.title': '任务进度',
-  'card.done': '完成',
-  'card.error': '失败',
-  'card.stage': '阶段',
-  'card.note': '备注',
-  'card.stages': '阶段链',
-  'card.elapsed': '耗时',
-  'card.eta': '预计剩余',
-  'card.empty': '（无进度数据）',
   'bar.idle': '会话就绪',
   'bar.running': '正在执行',
   'bar.thinking': '正在思考',
@@ -22,6 +13,7 @@ export const zh = {
   'bar.elapsed': '已耗时 {duration}',
   'bar.eta': '预计剩余 {duration}',
   'bar.lastTurn': '上回合 {duration}',
+  'bar.interrupted': '已中断',
   'bar.pendingApproval': '等待审批',
   'bar.pendingQuestion': '需要选择',
   'bar.pendingPlan': '等待计划审阅',
@@ -36,15 +28,6 @@ export type ProgressKey = keyof typeof zh
 
 /** English dictionary, checked complete against the zh key set. */
 export const en = {
-  'card.title': 'Task progress',
-  'card.done': 'Done',
-  'card.error': 'Failed',
-  'card.stage': 'Stage',
-  'card.note': 'Note',
-  'card.stages': 'Stages',
-  'card.elapsed': 'Elapsed',
-  'card.eta': 'ETA',
-  'card.empty': '(no progress data)',
   'bar.idle': 'Session idle',
   'bar.running': 'Executing',
   'bar.thinking': 'Thinking',
@@ -56,6 +39,7 @@ export const en = {
   'bar.elapsed': 'Elapsed {duration}',
   'bar.eta': 'ETA {duration}',
   'bar.lastTurn': 'Last turn {duration}',
+  'bar.interrupted': 'Interrupted',
   'bar.pendingApproval': 'Awaiting approval',
   'bar.pendingQuestion': 'Needs selection',
   'bar.pendingPlan': 'Awaiting plan review',

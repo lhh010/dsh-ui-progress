@@ -1,9 +1,10 @@
 /* SessionProgressBar: resident session-progress strip in the composer input
    dock (the GoalBar family). Colors/motion reference --dsw tokens; motion
    durations are local literals (no motion token family exists yet). The
-   three animation layers: a spinning loading glyph while the turn runs, a
-   shimmer band gliding over the fill while the turn runs, and a subtle glow
-   on the whole bar while running. */
+   animation layers: a spinning loading glyph while the turn runs, a shimmer
+   band gliding over the fill while the turn runs, a subtle glow on the whole
+   bar while running, and slow attention pulses for the pending/interrupted
+   palettes. */
 
 .dock {
   box-sizing: border-box;
@@ -72,6 +73,40 @@
 
 .bar[data-state='pending'] .fill {
   background: var(--dsw-alias-state-warn-primary);
+}
+
+/* Interrupted state: the latest settled turn was stopped — a manual stop, an
+   API failure, or another unexpected break. The bar switches to the
+   orange-red palette with a slow attention pulse; it outranks the running
+   and done states so the stop cannot be missed. The token system has no
+   dedicated orange, so the palette is a warn/error mix (the strip's custom
+   property is scoped to this state and reused by the keyframes). */
+.bar[data-state='interrupted'] {
+  --ui-progress-interrupted: color-mix(in srgb, var(--dsw-alias-state-warn-primary) 45%, var(--dsw-alias-state-error-primary));
+  border-color: color-mix(in srgb, var(--ui-progress-interrupted) 40%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-state-warn-tertiary) 85%, var(--dsw-alias-state-error-secondary));
+  animation: dsh-session-progress-interrupted-glow 1.6s ease-in-out infinite;
+}
+
+.bar[data-state='interrupted'] .glyph {
+  color: var(--ui-progress-interrupted);
+}
+
+.bar[data-state='interrupted'] .fill {
+  background: var(--ui-progress-interrupted);
+}
+
+.bar[data-state='interrupted'] .percent {
+  color: var(--ui-progress-interrupted);
+}
+
+@keyframes dsh-session-progress-interrupted-glow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--ui-progress-interrupted) 0%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 10px 1px color-mix(in srgb, var(--ui-progress-interrupted) 30%, transparent);
+  }
 }
 
 @keyframes dsh-session-progress-warn-glow {

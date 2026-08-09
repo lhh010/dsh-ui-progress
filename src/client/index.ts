@@ -1,9 +1,9 @@
 /**
  * Task-progress plugin, browser half: the resident session-progress strip
- * (input dock) plus the animated toolview for the `report_progress` tool.
- * The strip derives live execution state from the conversation snapshot —
- * no model-facing tool required; the toolview stays as the manual-report
- * card. Export discipline: packages/client/AGENTS.md — only the cordis apply
+ * (input dock). The strip derives live execution state from the conversation
+ * snapshot — no model-facing tool required; the report_progress toolview was
+ * removed in v0.8.0 (hosts that provide the tool render their own surface).
+ * Export discipline: packages/client/AGENTS.md — only the cordis apply
  * surface and contract types leave this package.
  */
 import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
@@ -11,17 +11,13 @@ import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 // Type-only: the `todos` SessionProjectionMap key merge (single source, the todo domain's pure outlet).
 import type {} from '@deepseek-ai/dsh-tool-todo/client'
-// Type-only: pulls the SlotMap merges for the slots this plugin registers
-// into — 'conversation.input.dock' (declared by ui-conversation's contract)
-// and 'tool.call.toolview' (declared by ui-tool's contract). Without them the
-// register overloads see no declared slot names.
+// Type-only: pulls the SlotMap merge for the slot this plugin registers
+// into — 'conversation.input.dock' (declared by ui-conversation's contract).
+// Without it the register overload sees no declared slot name.
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
-import type {} from '@deepseek-ai/dsh-client-ui-tool/client'
-import { ProgressCard } from './ProgressCard.tsx'
 import { SessionProgressBar } from './SessionProgressBar.tsx'
 import { en, zh, type ProgressKey } from './locales.ts'
 
-export type { ProgressArgs, ProgressCardProps } from './ProgressCard.tsx'
 export type { SessionProgressBarProps } from './SessionProgressBar.tsx'
 export type { ProgressKey } from './locales.ts'
 
@@ -38,16 +34,13 @@ const NS = 'progress'
 /**
  * Required services (cordis fiber inject). 'conversation' is an ordering
  * edge for the input-dock registration, not a call dependency: the dock slot
- * is declared by ui-conversation's apply. The atomic toolview slot
- * 'tool.call.toolview' is declared by ui-tool's apply, so that registration
- * waits on the slot declaration through slots.inject rather than the fiber.
+ * is declared by ui-conversation's apply.
  */
 export const inject = ['slots', 'conversation', 'locale']
 
 /**
- * Client plugin body: register the `progress` dictionaries, the resident
- * session-progress strip into the input dock, and the animated progress card
- * into the keyed toolview hole under the `report_progress` tool name.
+ * Client plugin body: register the `progress` dictionaries and the resident
+ * session-progress strip into the input dock.
  * @param ctx - client root context.
  */
 export function apply(ctx: ClientContext): void {
@@ -64,13 +57,4 @@ export function apply(ctx: ClientContext): void {
       'ui-progress: session progress strip',
     )
   })
-
-  // The animated progress card renders under the 'report_progress' tool name
-  // in ui-tool's keyed 'tool.call.toolview' hole. slots.inject waits for
-  // ui-tool to declare the slot, then registers (and re-registers if the
-  // declaration is ever replaced).
-  ctx.slots.inject('tool.call.toolview', () => ctx.slots.register(
-    { name: 'tool.call.toolview', key: 'report_progress', locale: NS },
-    ProgressCard,
-  ))
 }
