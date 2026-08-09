@@ -1,10 +1,10 @@
 # 安装（组织内成员）
 
-> **版本选择**：`v0.7.0`（默认）面向 DSH 快照 snapshot0808（`snapshots/20260808T121140Z-7f25d3e98c`）；`v0.6.0` 面向 snapshot0807（`snapshots/20260807T130646Z-e8a0f1a758`）；`v0.1.0` 面向 snapshot0805（`snapshots/20260805T134133Z-ce1fc03f95`），按旧方式安装。版本对应详见 [README.md](README.md#版本对应--version-compatibility)。
+> **版本选择**：`v0.8.0`（默认）面向 DSH 快照 snapshot0808（`snapshots/20260808T121140Z-7f25d3e98c`）；`v0.7.0` 面向 snapshot0808（同快照上一构建）；`v0.6.0` 面向 snapshot0807（`snapshots/20260807T130646Z-e8a0f1a758`）；`v0.1.0` 面向 snapshot0805（`snapshots/20260805T134133Z-ce1fc03f95`），按旧方式安装。版本对应详见 [README.md](README.md#版本对应--version-compatibility)。
 
-前置：**DSH 已构建快照**（`~/.dsh/source/current` 指向含 `lib/` 产物的快照——`cordis` 与各 `@deepseek-ai/dsh-client-*` 的 `link:` 开发依赖从该快照解析）+ `dsh web` 运行中 + **dsh-external 组织读权限**。本插件是**双 half 插件**（宿主 half：`report_progress` 工具 + 系统提示词引导；浏览器 half：进度呈现），安装 = ① 包可被配置树解析 + ② 配置里加一行。
+前置：**DSH 已构建快照**（`~/.dsh/source/current` 指向含 `lib/` 产物的快照——`cordis` 与各 `@deepseek-ai/dsh-client-*` 的 `link:` 开发依赖从该快照解析）+ `dsh web` 运行中 + **dsh-external 组织读权限**。本插件是**纯浏览器 half 插件**（宿主 half 为空，v0.8.0 起不再自带 `report_progress` 工具与上报引导；浏览器 half：进度呈现），安装 = ① 包可被配置树解析 + ② 配置里加一行。
 
-## snapshot0808（v0.7.0）——profile 安装方式
+## snapshot0808（v0.8.0）——profile 安装方式
 
 ```sh
 # 1. 克隆私有仓库（需要组织读权限），构建产物已入库，无需构建
@@ -14,12 +14,12 @@ cd dsh-ui-progress && pnpm install
 # 2. 装进 web profile（等价于在 $DSH_HOME/profiles/web 下执行 pnpm add）
 dsh plugin --profile web add link:/path/to/dsh-ui-progress
 #   或固定 tag 的 git 依赖：
-#   dsh plugin --profile web add '@dsh-external/dsh-ui-progress@github:dsh-external/dsh-ui-progress#v0.7.0'
+#   dsh plugin --profile web add '@dsh-external/dsh-ui-progress@github:dsh-external/dsh-ui-progress#v0.8.0'
 ```
 
 > snapshot0807 用户固定 `#v0.6.0`（旧 slot 契约 `conversation.chat.toolview`，不适用于 0808）。
 
-> v0.5.0 起宿主 half 注册 `report_progress` 工具与上报引导：升级安装后请**重启一次 `dsh web`** 使宿主 half 生效（浏览器 half 刷新页面即生效）。若你的宿主插件也已注册同名工具，本插件会自动跳过工具注册（提示词引导照常注入）。
+> v0.8.0 起宿主 half 为空（不再注册 `report_progress` 工具与上报引导）：升级安装后**无需重启 `dsh web`**，浏览器 half 刷新页面即生效。
 
 配置行（`$DSH_HOME/profiles/web/cordis.patch.yml`，热重载，无需重启）：
 
@@ -64,8 +64,8 @@ pnpm add '@dsh-external/dsh-ui-progress@github:dsh-external/dsh-ui-progress#v0.1
 
 ## 重启 `dsh web`
 
-插件集合变更按「重启生效」纪律（0805 旧机制下适用；0806 profile 方式配置行热重载，无需重启）。停掉当前 web（Ctrl+C）后重新启动。
+插件集合变更按「重启生效」纪律（0805 旧机制下适用；0806 profile 方式配置行热重载，无需重启）。v0.8.0 宿主 half 为空，浏览器 half 的更新只需刷新页面。停掉当前 web（Ctrl+C）后重新启动。
 
 ## 验证
 
-会话运行中：输入框上方常驻进度条左侧加载圈旋转；模型调用 `report_progress` 时对话流出现进度卡片（左侧圈同样旋转，100% 时脉冲成功色光晕）。
+会话运行中：输入框上方常驻进度条左侧加载圈旋转，运行中显示实时已耗时与 ETA（模型上报时）。有 todos 列表的会话显示真实完成比例，无 todos 的会话填充固定 100%。手动停止会话或 API 出错中断后，进度条切换为**橘红色**"已中断"态；中断后再次发送并正常完成，进度条恢复绿色完成态。
