@@ -11,6 +11,12 @@ import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 // Type-only: the `todos` SessionProjectionMap key merge (single source, the todo domain's pure outlet).
 import type {} from '@deepseek-ai/dsh-tool-todo/client'
+// Type-only: pulls the SlotMap merges for the slots this plugin registers
+// into — 'conversation.input.dock' (declared by ui-conversation's contract)
+// and 'tool.call.toolview' (declared by ui-tool's contract). Without them the
+// register overloads see no declared slot names.
+import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
+import type {} from '@deepseek-ai/dsh-client-ui-tool/client'
 import { ProgressCard } from './ProgressCard.tsx'
 import { SessionProgressBar } from './SessionProgressBar.tsx'
 import { en, zh, type ProgressKey } from './locales.ts'
@@ -31,10 +37,10 @@ const NS = 'progress'
 
 /**
  * Required services (cordis fiber inject). 'conversation' is an ordering
- * edge, not a call dependency: both 'conversation.input.dock' and
- * 'conversation.chat.toolview' are declared by ui-conversation's apply, and
- * register() into an undeclared slot throws — service waiting orders this
- * apply after the declaring one.
+ * edge for the input-dock registration, not a call dependency: the dock slot
+ * is declared by ui-conversation's apply. The atomic toolview slot
+ * 'tool.call.toolview' is declared by ui-tool's apply, so that registration
+ * waits on the slot declaration through slots.inject rather than the fiber.
  */
 export const inject = ['slots', 'conversation', 'locale']
 
@@ -59,11 +65,12 @@ export function apply(ctx: ClientContext): void {
     )
   })
 
-  ctx.effect(
-    () => ctx.slots.register(
-      { name: 'conversation.chat.toolview', key: 'report_progress', locale: NS },
-      ProgressCard,
-    ),
-    'ui-progress: toolview registration',
-  )
+  // The animated progress card renders under the 'report_progress' tool name
+  // in ui-tool's keyed 'tool.call.toolview' hole. slots.inject waits for
+  // ui-tool to declare the slot, then registers (and re-registers if the
+  // declaration is ever replaced).
+  ctx.slots.inject('tool.call.toolview', () => ctx.slots.register(
+    { name: 'tool.call.toolview', key: 'report_progress', locale: NS },
+    ProgressCard,
+  ))
 }

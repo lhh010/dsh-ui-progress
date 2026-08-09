@@ -24,7 +24,7 @@ import {
   IconLoadingOutline16,
   IconWarningOutline16,
 } from '@deepseek-ai/dsh-client-ui-primitives'
-import type { ToolRowProps } from '@deepseek-ai/dsh-client-ui-conversation/client'
+import type { ToolCallBlock, UseConversationSession } from '@deepseek-ai/dsh-client-runtime/client'
 import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
 import clsx from 'clsx'
 import type { ReactNode } from 'react'
@@ -36,8 +36,23 @@ import { formatElapsed, useNow } from './timing.ts'
 
 export type { ProgressArgs } from './args.ts'
 
+/**
+ * Owner payload the Tool presentation seat (ui-tool) supplies to each atomic
+ * toolview, plus the standard session-snapshot selector and the locale seat.
+ */
+interface ProgressToolViewProps {
+  /** Wire Tool name and keyed dispatch value. */
+  toolName: string
+  /** Frozen running call or settled result node. */
+  block: ToolCallBlock
+  /** Inspect this call in the trajectory view when available. */
+  inspect?: (() => void) | undefined
+  /** Conversation-snapshot selector (standard kit for session-scoped slots). */
+  useSession: UseConversationSession
+}
+
 /** Progress card props: the toolview runtime share plus the standard locale seat. */
-export type ProgressCardProps = ToolRowProps & PropsLocale<'progress'>
+export type ProgressCardProps = ProgressToolViewProps & PropsLocale<'progress'>
 
 /** Format the bar's leading label: task name, or a localized fallback. */
 function taskLabel(args: ReturnType<typeof parseArgs>, t: ProgressCardProps['t']): string {
