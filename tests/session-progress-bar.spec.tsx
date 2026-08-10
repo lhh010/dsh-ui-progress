@@ -1,16 +1,18 @@
 // @vitest-environment jsdom
 /**
  * Component-level smoke tests for SessionProgressBar: the resident strip
- * renders the live token-rate chip while the model streams (and only then).
+ * renders the live token-rate chip while the model streams (and only then),
+ * computed as a sliding-window average that changes at most once per second.
  * Every @deepseek-ai face is stubbed — icons via vi.mock, session/projection
  * seats via props — so the suite needs no resolution into the harness
  * snapshot's sources; CSS Modules stub to empty objects under vitest's
  * default css handling. The pure rate math itself is pinned by
  * tests/token-rate.spec.ts; this suite proves the wiring (anchor hook +
- * clock + render gate).
+ * sliding-window clock + render gates).
  */
 import { act, cleanup, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import type { ReactElement } from 'react'
 import type { ConversationSnapshot, SessionId } from '@deepseek-ai/dsh-client-runtime/client'
 import { SessionProgressBar, type SessionProgressBarProps } from '../src/client/SessionProgressBar.tsx'
 import { zh } from '../src/client/locales.ts'
@@ -36,12 +38,14 @@ function makeT(): SessionProgressBarProps['t'] {
 const useProjection = (() => undefined) as unknown as SessionProgressBarProps['useProjection']
 const useSessions = (() => ({ byId: {} })) as unknown as SessionProgressBarProps['useSessions']
 
-function makeSnapshot(overrides: {
+type BarOverrides = {
   running?: boolean
   partial?: ConversationSnapshot['partial']
   pending?: ConversationSnapshot['pending']
   nodes?: ConversationSnapshot['nodes']
-} = {}): ConversationSnapshot {
+}
+
+function makeSnapshot(overrides: BarOverrides = {}): ConversationSnapshot {
   return {
     sessionId: 'session-1' as SessionId,
     chat: {} as ConversationSnapshot['chat'],
@@ -66,16 +70,23 @@ function makeSnapshot(overrides: {
   }
 }
 
+/** Full streaming partial: 4 CJK-wide chars -> 4 estimated tokens. */
 const STREAMING_PARTIAL = {
   turn: 1,
   step: 1,
-  // 4 CJK-wide chars -> 4 estimated tokens over the decode window.
   blocks: [{ kind: 'text' as const, text: '你好世界' }],
 }
 
-function renderBar(overrides: Parameters<typeof makeSnapshot>[0] = {}): void {
+/** Half of it: 2 estimated tokens, used to simulate tokens arriving over time. */
+const PARTIAL_START = {
+  turn: 1,
+  step: 1,
+  blocks: [{ kind: 'text' as const, text: '你好' }],
+}
+
+function barElement(overrides: BarOverrides = {}): ReactElement {
   const session = makeSnapshot(overrides)
-  render(
+  return (
     <SessionProgressBar
       session={session}
       // The dock owner share includes the live input state and the standard
@@ -90,9 +101,26 @@ function renderBar(overrides: Parameters<typeof makeSnapshot>[0] = {}): void {
       useProjection={useProjection}
       useSessions={useSessions}
       useWorkspaces={(() => []) as unknown as SessionProgressBarProps['useWorkspaces']}
-    />,
+    />
   )
 }
+
+/** Render the strip and return a rerender that swaps the snapshot (streaming simulation). */
+function renderBar(overrides: BarOverrides = {}): { rerender: (next: BarOverrides) => void } {
+  const view = render(barElement(overrides))
+  return { rerender: (next: BarOverrides) => view.rerender(barElement(next)) }
+}
+
+/** A settled step priced 8 real output tokens over 4 weighted chars -> density 2. */
+const CALIBRATED_NODES = [{
+  kind: 'assistant',
+  seq: 1,
+  time: 1_000,
+  turn: 1,
+  step: 1,
+  blocks: STREAMING_PARTIAL.blocks,
+  usage: { outputTokens: 8 },
+}] as unknown as ConversationSnapshot['nodes']
 
 describe('SessionProgressBar live token rate', () => {
   it('mounts and renders the running state from the zh dictionary', () => {
@@ -101,37 +129,41 @@ describe('SessionProgressBar live token rate', () => {
     expect(screen.getByText('100%')).toBeTruthy()
   })
 
-  it('shows the live token-rate chip while the model streams', () => {
+  it('shows a sliding-window token rate that updates at most once per second', () => {
     vi.useFakeTimers()
     vi.setSystemTime(10_000)
-    renderBar({ running: true, partial: STREAMING_PARTIAL })
-    // 4 tokens over a 4s decode window -> 1 tok/s.
+    const bar = renderBar({ running: true, partial: PARTIAL_START })
+    // Two more tokens arrive 300ms into the first window.
     act(() => {
-      vi.advanceTimersByTime(4_000)
+      vi.advanceTimersByTime(300)
     })
-    expect(screen.getByText('1 tok/s')).toBeTruthy()
+    bar.rerender({ running: true, partial: STREAMING_PARTIAL })
+    // First window completes at 11_000: gained 4-2 = 2 tokens over 1s.
+    act(() => {
+      vi.advanceTimersByTime(700)
+    })
+    expect(screen.getByText('2 tok/s')).toBeTruthy()
+    // A window with no new tokens keeps the previous reading (no 0-flicker).
+    act(() => {
+      vi.advanceTimersByTime(1_000)
+    })
+    expect(screen.getByText('2 tok/s')).toBeTruthy()
   })
 
   it('scales the live estimate by the calibrated density of a settled step', () => {
     vi.useFakeTimers()
     vi.setSystemTime(10_000)
-    // A settled step priced 8 real output tokens over 4 weighted chars
-    // ('你好世界') -> density 2; the streaming partial is scaled by it.
-    const nodes = [{
-      kind: 'assistant',
-      seq: 1,
-      time: 1_000,
-      turn: 1,
-      step: 1,
-      blocks: STREAMING_PARTIAL.blocks,
-      usage: { outputTokens: 8 },
-    }] as unknown as ConversationSnapshot['nodes']
-    renderBar({ running: true, partial: STREAMING_PARTIAL, nodes })
+    // Density 2: 2 weighted chars -> 4 estimated tokens, 4 -> 8.
+    const bar = renderBar({ running: true, partial: PARTIAL_START, nodes: CALIBRATED_NODES })
     act(() => {
-      vi.advanceTimersByTime(4_000)
+      vi.advanceTimersByTime(300)
     })
-    // 8 estimated tokens over a 4s decode window -> 2 tok/s.
-    expect(screen.getByText('2 tok/s')).toBeTruthy()
+    bar.rerender({ running: true, partial: STREAMING_PARTIAL, nodes: CALIBRATED_NODES })
+    act(() => {
+      vi.advanceTimersByTime(700)
+    })
+    // Gained 8-4 = 4 tokens over 1s -> 4 tok/s.
+    expect(screen.getByText('4 tok/s')).toBeTruthy()
   })
 
   it('hides the chip while a human interaction waits (paused stream)', () => {

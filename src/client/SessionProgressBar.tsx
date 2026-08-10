@@ -36,13 +36,14 @@
  * Live token rate (v0.9.0): while the model is emitting (running with a
  * non-empty partial and no pending human interaction), the strip shows a
  * live generation-rate readout — estimated tokens over the decode window
- * since the first visible token, ticking with the elapsed clock. Streaming
- * chunks carry no token counts, so the figure is an estimate that
- * self-calibrates to the model's real tokenizer density from the latest
- * settled step's provider usage (CJK-aware char heuristic before the first
- * calibrated step; see token-rate.ts), measured from the same first-token
- * anchor the core uses for its settled tokens/s — the live number is
- * directly comparable to the post-turn value on the conversation StatsLine.
+ * since the first visible token. Streaming chunks carry no token counts, so
+ * the figure is an estimate that self-calibrates to the model's real
+ * tokenizer density from the latest settled step's provider usage (CJK-aware
+ * char heuristic before the first calibrated step; see token-rate.ts), and
+ * is smoothed through a sliding window so the readout changes at most once
+ * per second instead of on every chunk. Measured from the same first-token
+ * anchor the core uses for its settled tokens/s, the live number is directly
+ * comparable to the post-turn value on the conversation StatsLine.
  */
 import { IconLoadingOutline16, IconSparkle16, IconWarningOutline16 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { SessionId, SessionSummary } from '@deepseek-ai/dsh-client-runtime/client'
@@ -54,8 +55,8 @@ import {
   isReasoning, lastTurnDuration, latestReportEta, latestTurnInterrupted, progressPercent,
   runningTool, runningTurnStart, settledToolCount, todoCounts,
 } from './session-state.ts'
-import { formatElapsed, useFirstTokenAt, useNow } from './timing.ts'
-import { formatTokenRate, latestTokenDensity, liveTokenRate, streamedTokenEstimate } from './token-rate.ts'
+import { formatElapsed, TOKEN_RATE_WINDOW_MS, useFirstTokenAt, useNow, useWindowedTokenRate } from './timing.ts'
+import { formatTokenRate, latestTokenDensity, streamedTokenEstimate } from './token-rate.ts'
 
 /** Dock entry props: InputZone owner share + session standard kit + locale seat. */
 export type SessionProgressBarProps = import('@deepseek-ai/dsh-client-ui-slots').PropsRuntime<'conversation.input.dock'> & PropsLocale<'progress'>
@@ -189,16 +190,18 @@ export function SessionProgressBar({ session, t, useProjection, useSessions }: S
   // API failure, or another unexpected break) — orange-red, outranks the
   // running/done rests so the stop cannot be missed.
   const interrupted = !running && latestTurnInterrupted(session)
-  // Live tokens/sec over the decode window since the first visible token,
-  // self-calibrated to the model's real tokenizer density: the latest
-  // settled step's provider-reported output tokens over its weighted chars
-  // scale the streaming partial (falling back to the CJK-aware heuristic
-  // before the first calibrated step). Comparable to the settled tokens/s
-  // the conversation StatsLine shows.
+  // Live tokens/sec since the first visible token, self-calibrated to the
+  // model's real tokenizer density (latest settled step's provider usage
+  // over its weighted chars scales the partial; CJK-aware heuristic before
+  // the first calibrated step). Smoothed through a sliding window so the
+  // readout changes at most once per window instead of on every chunk.
   const density = latestTokenDensity(session.nodes)
-  const tokenRate = running && !pending && firstTokenAt !== null
-    ? liveTokenRate(streamedTokenEstimate(partial, density), firstTokenAt, rateNow)
-    : null
+  const tokenRate = useWindowedTokenRate(
+    running && !pending && firstTokenAt !== null,
+    firstTokenAt,
+    streamedTokenEstimate(partial, density),
+    TOKEN_RATE_WINDOW_MS,
+  )
 
   return (
     <div className={css.dock} data-progress-bar>

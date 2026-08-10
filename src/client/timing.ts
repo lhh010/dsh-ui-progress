@@ -8,7 +8,7 @@
  */
 import { useEffect, useRef, useState } from 'react'
 import type { PartialAssistant } from '@deepseek-ai/dsh-client-runtime/client'
-import { weightedPartialChars } from './token-rate.ts'
+import { liveTokenRate, weightedPartialChars } from './token-rate.ts'
 
 /**
  * Compact duration: one decimal always under a minute (17.0s, 3.4s), folded
@@ -102,4 +102,62 @@ export function useFirstTokenAt(running: boolean, partial: PartialAssistant | nu
     // Same key with live tokens: keep the existing anchor (stamped once).
   }, [running, key, hasTokens])
   return anchor
+}
+
+/**
+ * Sliding-window cadence of the live token-rate readout: the displayed tok/s
+ * is the average over the most recent window of this length, refreshed once
+ * per window — chunk-level arrivals are smoothed into a stable figure that
+ * changes at most every window instead of on every stream chunk.
+ */
+export const TOKEN_RATE_WINDOW_MS = 1_000
+
+/**
+ * Sliding-window token rate for the live chip: the average estimated tokens
+ * gained per second over the most recent window, recomputed once per window
+ * and only when tokens actually arrived (a fully empty window keeps the
+ * previous reading so a paused stream does not flicker to zero). A fresh
+ * anchor re-opens the window; disabling clears the reading.
+ * @param enabled - whether the stream is live (running, no pending wait, anchor set).
+ * @param anchor - first-visible-token epoch ms (window origin for the first sample).
+ * @param tokens - current estimated streamed tokens (latest per-render value).
+ * @param windowMs - smoothing window; defaults to {@link TOKEN_RATE_WINDOW_MS}.
+ * @returns the windowed tokens/sec, or null before the first full window or while disabled.
+ */
+export function useWindowedTokenRate(
+  enabled: boolean,
+  anchor: number | null,
+  tokens: number,
+  windowMs: number = TOKEN_RATE_WINDOW_MS,
+): number | null {
+  const [rate, setRate] = useState<number | null>(null)
+  const windowStartRef = useRef<{ time: number; tokens: number } | null>(null)
+  const tokensRef = useRef(tokens)
+  tokensRef.current = tokens
+
+  useEffect(() => {
+    if (!enabled || anchor === null) {
+      windowStartRef.current = null
+      setRate(null)
+      return
+    }
+    if (windowStartRef.current === null) {
+      windowStartRef.current = { time: Date.now(), tokens: tokensRef.current }
+    }
+    const timer = setInterval(() => {
+      const start = windowStartRef.current
+      if (start === null) return
+      const now = Date.now()
+      const gained = tokensRef.current - start.tokens
+      if (gained > 0) {
+        setRate(liveTokenRate(gained, start.time, now))
+      }
+      // Advance the window baseline either way so the average always covers
+      // the most recent window.
+      windowStartRef.current = { time: now, tokens: tokensRef.current }
+    }, windowMs)
+    return () => { clearInterval(timer) }
+  }, [enabled, anchor, windowMs])
+
+  return rate
 }
