@@ -1,10 +1,10 @@
 # 安装（组织内成员）
 
-> **版本选择**：`v0.9.0`（默认）面向 DSH 快照 snapshot0808（`snapshots/20260808T121140Z-7f25d3e98c`）；`v0.8.0` 面向 snapshot0808（同快照上一构建）；`v0.6.0` 面向 snapshot0807（`snapshots/20260807T130646Z-e8a0f1a758`）；`v0.1.0` 面向 snapshot0805（`snapshots/20260805T134133Z-ce1fc03f95`），按旧方式安装。版本对应详见 [README.md](README.md#版本对应--version-compatibility)。
+> **版本选择**：`v0.9.0`（默认）面向 DSH 快照 snapshot0809（`snapshots/20260809T140917Z-a6bb5a95ba`）；`v0.8.0` 面向 snapshot0808（`snapshots/20260808T121140Z-7f25d3e98c`）；`v0.6.0` 面向 snapshot0807（`snapshots/20260807T130646Z-e8a0f1a758`）；`v0.1.0` 面向 snapshot0805（`snapshots/20260805T134133Z-ce1fc03f95`），按旧方式安装。版本对应详见 [README.md](README.md#版本对应--version-compatibility)。
 
 前置：**DSH 已构建快照**（`~/.dsh/source/current` 指向含 `lib/` 产物的快照——`cordis` 与各 `@deepseek-ai/dsh-client-*` 的 `link:` 开发依赖从该快照解析）+ `dsh web` 运行中 + **dsh-external 组织读权限**。本插件是**纯浏览器 half 插件**（宿主 half 为空，v0.8.0 起不再自带 `report_progress` 工具与上报引导；浏览器 half：进度呈现），安装 = ① 包可被配置树解析 + ② 配置里加一行。
 
-## snapshot0808（v0.9.0）——profile 安装方式
+## snapshot0809（v0.9.0）——profile 安装方式
 
 ```sh
 # 1. 克隆私有仓库（需要组织读权限），构建产物已入库，无需构建
@@ -17,9 +17,9 @@ dsh plugin --profile web add link:/path/to/dsh-ui-progress
 #   dsh plugin --profile web add '@dsh-external/dsh-ui-progress@github:dsh-external/dsh-ui-progress#v0.9.0'
 ```
 
-> snapshot0807 用户固定 `#v0.6.0`（旧 slot 契约 `conversation.chat.toolview`，不适用于 0808）。
+> snapshot0808 用户固定 `#v0.8.0`（0808 构建，同样兼容 0809 宿主）；snapshot0807 用户固定 `#v0.6.0`（旧 slot 契约 `conversation.chat.toolview`，不适用于 0808/0809）。
 
-> v0.8.0 起宿主 half 为空（不再注册 `report_progress` 工具与上报引导）：升级安装后**无需重启 `dsh web`**，浏览器 half 刷新页面即生效。
+> v0.8.0 起宿主 half 为空（不再注册 `report_progress` 工具与上报引导）：升级安装后**无需重启 `dsh web`**，浏览器 half 刷新页面即生效。0809 宿主在激活时校验 `dshClient` 包的构建产物（缺失抛 `ClientPackageCompositionError` 并拒绝启动）——升级快照或改源码后必须重新 `pnpm run build` 再启动。
 
 配置行（`$DSH_HOME/profiles/web/cordis.patch.yml`，热重载，无需重启）：
 
