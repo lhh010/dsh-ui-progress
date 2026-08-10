@@ -1,9 +1,9 @@
 {
   "name": "@dsh-external/dsh-ui-progress",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "private": true,
   "type": "module",
-  "description": "DSH Web UI 会话进度插件：输入框停靠区常驻会话进度条（todos 真实进度 / 无投影默认 100% / 中断橘红态），零核心改动。",
+  "description": "DSH Web UI 会话进度插件：输入框停靠区常驻会话进度条（todos 真实进度 / 无投影默认 100% / 中断橘红态 / 实时 token 生成速率），零核心改动。",
   "main": "lib/index.js",
   "exports": {
     ".": "./lib/index.js",
@@ -25,7 +25,8 @@
   ],
   "scripts": {
     "build": "tsdown",
-    "typecheck": "tsc -p tsconfig.json"
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
   },
   "peerDependencies": {
     "@deepseek-ai/dsh-client-ui-primitives": "*",
@@ -47,7 +48,8 @@
     "lightningcss": "^1.32.0",
     "react": "^18.2.0",
     "tsdown": "^0.22.2",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.1"
   },
   "license": "BSD-3-Clause"
 }
