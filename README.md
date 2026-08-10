@@ -18,11 +18,12 @@ DSH Web UI 会话进度插件：为 DeepSeek Harness 的 Web GUI 的输入框停
 | `v0.6.0` | `snapshots/20260807T130646Z-e8a0f1a758`（snapshot0807） | 新构建：已耗时 0.1s 步进（满分钟折叠）+ subagent 待办琥珀提示 |
 | `v0.7.0` | `snapshots/20260808T121140Z-7f25d3e98c`（snapshot0808） | 新构建：适配 0808 的 slot 迁移（`conversation.chat.toolview` → `tool.call.toolview`，注册经 `slots.inject` 等待声明） |
 | `v0.8.0` | `snapshots/20260808T121140Z-7f25d3e98c`（snapshot0808） | 新构建：移除自带 `report_progress` 工具与上报引导（宿主 half 置空）、移除工具卡片；填充改为 todos 真实比例（无 todos 默认 100%）；新增中断橘红态（手动打断/API 错误等意外停止） |
-| `v0.9.0`（默认） | `snapshots/20260809T140917Z-a6bb5a95ba`（snapshot0809） | 新构建（原生 0809）：运行中新增**实时 token 生成速率**（自校准估算 + 1s 滑动窗口平滑，首 token 到达起算，贴近真实 provider usage） |
+| `v0.9.0` | `snapshots/20260809T140917Z-a6bb5a95ba`（snapshot0809） | 新构建（原生 0809）：运行中新增**实时 token 生成速率**（自校准估算 + 1s 滑动窗口平滑，首 token 到达起算，贴近真实 provider usage） |
+| `v0.9.1`（默认） | `snapshots/20260810T155924Z-8ec407cd64`（snapshot0810） | 兼容性构建：客户端插件元数据从顶层 `dshClient` 迁移为嵌套 `dsh.client`（0810 的 ClientModuleHostService 只读该字段；顶层 `dshClient` 被静默忽略），inject/platform 原样保留 |
 
-> **兼容性说明**：`v0.8.0` 构建基于 snapshot0808 开发，同时兼容 snapshot0809（`snapshots/20260809T140917Z-a6bb5a95ba`），实机验证通过；`v0.9.0` 为原生 snapshot0809 构建（默认版本）。
+> **兼容性说明**：`v0.8.0` 构建基于 snapshot0808 开发，同时兼容 snapshot0809（`snapshots/20260809T140917Z-a6bb5a95ba`），实机验证通过；`v0.9.0` 为原生 snapshot0809 构建；`v0.9.1` 面向 snapshot0810（`snapshots/20260810T155924Z-8ec407cd64`，默认版本）。
 
-> git 依赖方式固定 tag：`pnpm add '@dsh-external/dsh-ui-progress@github:dsh-external/dsh-ui-progress#v0.9.0'`（0807 用户用 `#v0.6.0`，0805 用户用 `#v0.1.0`，0808 用户用 `#v0.8.0`）。
+> git 依赖方式固定 tag：`pnpm add '@dsh-external/dsh-ui-progress@github:dsh-external/dsh-ui-progress#v0.9.1'`（0809 用户用 `#v0.9.0`，0808 用户用 `#v0.8.0`，0807 用户用 `#v0.6.0`，0805 用户用 `#v0.1.0`）。
 
 ## 0809 兼容要点（snapshot0809，实机验证）
 
@@ -30,6 +31,11 @@ DSH Web UI 会话进度插件：为 DeepSeek Harness 的 Web GUI 的输入框停
 - **加载机制变化**：0809 重构了客户端插件机制——旧的 `dsh.plugin.json` 清单 + `resolveClientPath`（`packages/plugin/plugin`）已删除，改为 **package.json 的 `dshClient` 声明**（`platform: 'web'`，可选 `inject`/`immediately`）+ `exports["./client"]` 指向构建产物；宿主扫描 loader 条目组成 boot 图，Web 端从 `/plugins/<id>/client.js` 拉取。本插件 package.json 已满足该声明，无需改动。
 - 本插件使用的槽位 `conversation.input.dock`（list/session）与 keyed `tool.call.toolview` 在 0809 上仍由官方客户端声明（`tool.call.toolview` 的 owner 类型与 0808 一致）；`useSession` 快照与 todos 投影契约未变。
 - **构建要求**：0809 宿主在激活时校验 `dshClient` 包的构建产物，缺失会抛 `ClientPackageCompositionError` 并**拒绝启动 `dsh web`**——升级快照或改源码后必须重新 `pnpm run build` 再启动，否则浏览器拉到的是旧 `lib/client.js`。
+
+## 0810 兼容要点（snapshot0810，实机验证）
+
+- **元数据发现变化**：0810 的 ClientModuleHostService 在启动时扫描已加载插件的 package.json，但只读**嵌套 `dsh.client`**（`packages/client/modules/src/index.ts` 的 `resolveMeta`，`pkg.dsh.client`）；顶层 `dshClient` 字段读不到会静默丢出 boot 图——无日志、无报错，"启动顺利但插件全没"。本插件已从顶层 `dshClient` 迁移为嵌套 `dsh.client`（inject/platform 原样保留），0810 实机验证 `window.__DSH_BOOT__` 清单包含本插件、进度条各态正常。
+- **无需重构建**：`lib/client.js` 构建产物不变，package.json 不参与编译；symlink 安装改源仓库即生效，无需重装。
 
 ## 功能
 
