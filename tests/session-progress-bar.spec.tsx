@@ -40,11 +40,12 @@ function makeSnapshot(overrides: {
   running?: boolean
   partial?: ConversationSnapshot['partial']
   pending?: ConversationSnapshot['pending']
+  nodes?: ConversationSnapshot['nodes']
 } = {}): ConversationSnapshot {
   return {
     sessionId: 'session-1' as SessionId,
     chat: {} as ConversationSnapshot['chat'],
-    nodes: [],
+    nodes: overrides.nodes ?? [],
     turnTimings: new Map([[1, { startTime: 1_000 }]]),
     turnEnds: new Map(),
     partial: overrides.partial ?? null,
@@ -109,6 +110,28 @@ describe('SessionProgressBar live token rate', () => {
       vi.advanceTimersByTime(4_000)
     })
     expect(screen.getByText('1 tok/s')).toBeTruthy()
+  })
+
+  it('scales the live estimate by the calibrated density of a settled step', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(10_000)
+    // A settled step priced 8 real output tokens over 4 weighted chars
+    // ('你好世界') -> density 2; the streaming partial is scaled by it.
+    const nodes = [{
+      kind: 'assistant',
+      seq: 1,
+      time: 1_000,
+      turn: 1,
+      step: 1,
+      blocks: STREAMING_PARTIAL.blocks,
+      usage: { outputTokens: 8 },
+    }] as unknown as ConversationSnapshot['nodes']
+    renderBar({ running: true, partial: STREAMING_PARTIAL, nodes })
+    act(() => {
+      vi.advanceTimersByTime(4_000)
+    })
+    // 8 estimated tokens over a 4s decode window -> 2 tok/s.
+    expect(screen.getByText('2 tok/s')).toBeTruthy()
   })
 
   it('hides the chip while a human interaction waits (paused stream)', () => {

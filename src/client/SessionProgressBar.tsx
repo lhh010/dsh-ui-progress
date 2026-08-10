@@ -37,8 +37,10 @@
  * non-empty partial and no pending human interaction), the strip shows a
  * live generation-rate readout — estimated tokens over the decode window
  * since the first visible token, ticking with the elapsed clock. Streaming
- * chunks carry no token counts, so the figure is an estimate (CJK-aware
- * char density, see token-rate.ts), measured from the same first-token
+ * chunks carry no token counts, so the figure is an estimate that
+ * self-calibrates to the model's real tokenizer density from the latest
+ * settled step's provider usage (CJK-aware char heuristic before the first
+ * calibrated step; see token-rate.ts), measured from the same first-token
  * anchor the core uses for its settled tokens/s — the live number is
  * directly comparable to the post-turn value on the conversation StatsLine.
  */
@@ -53,7 +55,7 @@ import {
   runningTool, runningTurnStart, settledToolCount, todoCounts,
 } from './session-state.ts'
 import { formatElapsed, useFirstTokenAt, useNow } from './timing.ts'
-import { estimatePartialTokens, formatTokenRate, liveTokenRate } from './token-rate.ts'
+import { formatTokenRate, latestTokenDensity, liveTokenRate, streamedTokenEstimate } from './token-rate.ts'
 
 /** Dock entry props: InputZone owner share + session standard kit + locale seat. */
 export type SessionProgressBarProps = import('@deepseek-ai/dsh-client-ui-slots').PropsRuntime<'conversation.input.dock'> & PropsLocale<'progress'>
@@ -187,11 +189,15 @@ export function SessionProgressBar({ session, t, useProjection, useSessions }: S
   // API failure, or another unexpected break) — orange-red, outranks the
   // running/done rests so the stop cannot be missed.
   const interrupted = !running && latestTurnInterrupted(session)
-  // Live tokens/sec over the decode window since the first visible token —
-  // estimated from the partial's characters (chunks carry no token counts);
-  // comparable to the settled tokens/s the conversation StatsLine shows.
+  // Live tokens/sec over the decode window since the first visible token,
+  // self-calibrated to the model's real tokenizer density: the latest
+  // settled step's provider-reported output tokens over its weighted chars
+  // scale the streaming partial (falling back to the CJK-aware heuristic
+  // before the first calibrated step). Comparable to the settled tokens/s
+  // the conversation StatsLine shows.
+  const density = latestTokenDensity(session.nodes)
   const tokenRate = running && !pending && firstTokenAt !== null
-    ? liveTokenRate(estimatePartialTokens(partial), firstTokenAt, rateNow)
+    ? liveTokenRate(streamedTokenEstimate(partial, density), firstTokenAt, rateNow)
     : null
 
   return (

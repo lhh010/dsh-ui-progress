@@ -8,7 +8,7 @@
  */
 import { useEffect, useRef, useState } from 'react'
 import type { PartialAssistant } from '@deepseek-ai/dsh-client-runtime/client'
-import { estimatePartialTokens } from './token-rate.ts'
+import { weightedPartialChars } from './token-rate.ts'
 
 /**
  * Compact duration: one decimal always under a minute (17.0s, 3.4s), folded
@@ -87,7 +87,7 @@ export function useNow(enabled: boolean, start: number | null): number {
 export function useFirstTokenAt(running: boolean, partial: PartialAssistant | null): number | null {
   const [anchor, setAnchor] = useState<number | null>(null)
   const key = partial === null ? null : `${partial.turn}\u0000${partial.step}`
-  const hasTokens = partial !== null && estimatePartialTokens(partial) > 0
+  const hasTokens = partial !== null && weightedPartialChars(partial) > 0
   const lastKey = useRef<string | null>(null)
   useEffect(() => {
     if (!running || key === null || !hasTokens) {

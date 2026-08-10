@@ -227,9 +227,14 @@
 }
 
 /* Live token-rate readout: business-tinted like the ETA, but italic —
-   an estimate (CJK-aware char density), not a provider-reported figure. */
+   an estimate (CJK-aware char density, self-calibrated to provider usage),
+   not a provider-reported figure. Fixed minimum width with right alignment
+   keeps the bar's right edge stable while the number jumps (5 → 12.3 →
+   100); tabular numerals keep digit glyphs equal-width. */
 .rate {
   flex: none;
+  min-width: 60px;
+  text-align: right;
   font-size: 12px;
   line-height: 18px;
   font-variant-numeric: tabular-nums;
