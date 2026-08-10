@@ -1,10 +1,10 @@
 # 安装（组织内成员）
 
-> **版本选择**：`v0.8.0`（默认）面向 DSH 快照 snapshot0808（`snapshots/20260808T121140Z-7f25d3e98c`）；`v0.7.0` 面向 snapshot0808（同快照上一构建）；`v0.6.0` 面向 snapshot0807（`snapshots/20260807T130646Z-e8a0f1a758`）；`v0.1.0` 面向 snapshot0805（`snapshots/20260805T134133Z-ce1fc03f95`），按旧方式安装。版本对应详见 [README.md](README.md#版本对应--version-compatibility)。
+> **版本选择**：`v0.9.0`（默认）面向 DSH 快照 snapshot0808（`snapshots/20260808T121140Z-7f25d3e98c`）；`v0.8.0` 面向 snapshot0808（同快照上一构建）；`v0.6.0` 面向 snapshot0807（`snapshots/20260807T130646Z-e8a0f1a758`）；`v0.1.0` 面向 snapshot0805（`snapshots/20260805T134133Z-ce1fc03f95`），按旧方式安装。版本对应详见 [README.md](README.md#版本对应--version-compatibility)。
 
 前置：**DSH 已构建快照**（`~/.dsh/source/current` 指向含 `lib/` 产物的快照——`cordis` 与各 `@deepseek-ai/dsh-client-*` 的 `link:` 开发依赖从该快照解析）+ `dsh web` 运行中 + **dsh-external 组织读权限**。本插件是**纯浏览器 half 插件**（宿主 half 为空，v0.8.0 起不再自带 `report_progress` 工具与上报引导；浏览器 half：进度呈现），安装 = ① 包可被配置树解析 + ② 配置里加一行。
 
-## snapshot0808（v0.8.0）——profile 安装方式
+## snapshot0808（v0.9.0）——profile 安装方式
 
 ```sh
 # 1. 克隆私有仓库（需要组织读权限），构建产物已入库，无需构建
@@ -14,7 +14,7 @@ cd dsh-ui-progress && pnpm install
 # 2. 装进 web profile（等价于在 $DSH_HOME/profiles/web 下执行 pnpm add）
 dsh plugin --profile web add link:/path/to/dsh-ui-progress
 #   或固定 tag 的 git 依赖：
-#   dsh plugin --profile web add '@dsh-external/dsh-ui-progress@github:dsh-external/dsh-ui-progress#v0.8.0'
+#   dsh plugin --profile web add '@dsh-external/dsh-ui-progress@github:dsh-external/dsh-ui-progress#v0.9.0'
 ```
 
 > snapshot0807 用户固定 `#v0.6.0`（旧 slot 契约 `conversation.chat.toolview`，不适用于 0808）。
@@ -68,4 +68,4 @@ pnpm add '@dsh-external/dsh-ui-progress@github:dsh-external/dsh-ui-progress#v0.1
 
 ## 验证
 
-会话运行中：输入框上方常驻进度条左侧加载圈旋转，运行中显示实时已耗时与 ETA（模型上报时）。有 todos 列表的会话显示真实完成比例，无 todos 的会话填充固定 100%。手动停止会话或 API 出错中断后，进度条切换为**橘红色**"已中断"态；中断后再次发送并正常完成，进度条恢复绿色完成态。
+会话运行中：输入框上方常驻进度条左侧加载圈旋转，运行中显示实时已耗时、**实时 token 生成速率**（估算值，模型生成中显示，如 `12.3 tok/s`）与 ETA（模型上报时）。有 todos 列表的会话显示真实完成比例，无 todos 的会话填充固定 100%。手动停止会话或 API 出错中断后，进度条切换为**橘红色**"已中断"态；中断后再次发送并正常完成，进度条恢复绿色完成态。
