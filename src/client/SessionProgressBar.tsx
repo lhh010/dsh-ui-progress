@@ -32,6 +32,15 @@
  * switches to the orange-red palette with a slow pulse and the label reads
  * 已中断. Only the latest completed turn is judged (by its turn/end seq), so
  * an interruption followed by a clean turn does not keep the bar orange.
+ *
+ * Live token rate (v0.9.0): while the model is emitting (running with a
+ * non-empty partial and no pending human interaction), the strip shows a
+ * live generation-rate readout — estimated tokens over the decode window
+ * since the first visible token, ticking with the elapsed clock. Streaming
+ * chunks carry no token counts, so the figure is an estimate (CJK-aware
+ * char density, see token-rate.ts), measured from the same first-token
+ * anchor the core uses for its settled tokens/s — the live number is
+ * directly comparable to the post-turn value on the conversation StatsLine.
  */
 import { IconLoadingOutline16, IconSparkle16, IconWarningOutline16 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { SessionId, SessionSummary } from '@deepseek-ai/dsh-client-runtime/client'
@@ -43,7 +52,8 @@ import {
   isReasoning, lastTurnDuration, latestReportEta, latestTurnInterrupted, progressPercent,
   runningTool, runningTurnStart, settledToolCount, todoCounts,
 } from './session-state.ts'
-import { formatElapsed, useNow } from './timing.ts'
+import { formatElapsed, useFirstTokenAt, useNow } from './timing.ts'
+import { estimatePartialTokens, formatTokenRate, liveTokenRate } from './token-rate.ts'
 
 /** Dock entry props: InputZone owner share + session standard kit + locale seat. */
 export type SessionProgressBarProps = import('@deepseek-ai/dsh-client-ui-slots').PropsRuntime<'conversation.input.dock'> & PropsLocale<'progress'>
@@ -156,6 +166,12 @@ export function SessionProgressBar({ session, t, useProjection, useSessions }: S
   const turnStart = runningTurnStart(session)
   const now = useNow(running, turnStart)
   const elapsed = turnStart !== null ? Math.max(0, now - turnStart) : null
+  // Live token rate window: the streaming partial plus its first-visible-token
+  // anchor; the rate value itself is derived below, once `pending` is known
+  // (a paused stream would only decay, so the chip hides while attention waits).
+  const partial = session.partial
+  const firstTokenAt = useFirstTokenAt(running, partial)
+  const rateNow = useNow(running && firstTokenAt !== null, firstTokenAt)
   // ETA rides the model's own knowledge — never extrapolated from the fill.
   const modelEta = running ? latestReportEta(session) : null
   const lastTurn = running ? null : lastTurnDuration(session)
@@ -171,6 +187,12 @@ export function SessionProgressBar({ session, t, useProjection, useSessions }: S
   // API failure, or another unexpected break) — orange-red, outranks the
   // running/done rests so the stop cannot be missed.
   const interrupted = !running && latestTurnInterrupted(session)
+  // Live tokens/sec over the decode window since the first visible token —
+  // estimated from the partial's characters (chunks carry no token counts);
+  // comparable to the settled tokens/s the conversation StatsLine shows.
+  const tokenRate = running && !pending && firstTokenAt !== null
+    ? liveTokenRate(estimatePartialTokens(partial), firstTokenAt, rateNow)
+    : null
 
   return (
     <div className={css.dock} data-progress-bar>
@@ -194,6 +216,7 @@ export function SessionProgressBar({ session, t, useProjection, useSessions }: S
         <span className={css.percent}>{percent}%</span>
         {running && modelEta !== null && <span className={css.eta}>{t('bar.eta', { duration: modelEta })}</span>}
         {running && elapsed !== null && <span className={css.counter}>{t('bar.elapsed', { duration: formatElapsed(elapsed) })}</span>}
+        {running && tokenRate !== null && <span className={css.rate}>{t('bar.tokenRate', { rate: formatTokenRate(tokenRate) })}</span>}
         {!running && lastTurn !== null && <span className={css.counter}>{t('bar.lastTurn', { duration: formatElapsed(lastTurn) })}</span>}
         <span className={css.counter}>{t('bar.turn', { turn })}</span>
         <span className={css.counter}>{t('bar.tools', { count: settled })}</span>

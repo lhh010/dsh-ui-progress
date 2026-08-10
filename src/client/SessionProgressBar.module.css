@@ -226,6 +226,19 @@
   white-space: nowrap;
 }
 
+/* Live token-rate readout: business-tinted like the ETA, but italic —
+   an estimate (CJK-aware char density), not a provider-reported figure. */
+.rate {
+  flex: none;
+  font-size: 12px;
+  line-height: 18px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  font-style: italic;
+  color: var(--dsw-alias-state-business-primary);
+  white-space: nowrap;
+}
+
 /* Live percent readout next to the track. */
 .percent {
   flex: none;

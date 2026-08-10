@@ -3,9 +3,12 @@
  * formatting and a ticking clock for the live elapsed/ETA readouts. The
  * clock is a component-internal behavioral hook — it subscribes to nothing
  * external (no session or framework state), so it stays inside presentation
- * components.
+ * components. The first-token anchor hook stamps the live token-rate window
+ * the same way: from the snapshot's partial alone.
  */
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import type { PartialAssistant } from '@deepseek-ai/dsh-client-runtime/client'
+import { estimatePartialTokens } from './token-rate.ts'
 
 /**
  * Compact duration: one decimal always under a minute (17.0s, 3.4s), folded
@@ -68,4 +71,35 @@ export function useNow(enabled: boolean, start: number | null): number {
     }
   }, [enabled, start])
   return now
+}
+
+/**
+ * First-visible-token anchor for the live token-rate window: the epoch-ms
+ * instant the current streaming partial first carried estimated tokens
+ * (one render behind the real chunk event at most — a live readout does not
+ * need event-exact boundaries). Stamped once per (turn, step): a new step's
+ * partial re-opens the decode window, a null partial or a stopped turn
+ * closes it.
+ * @param running - whether the session turn is running.
+ * @param partial - the live streaming partial (snapshot-derived).
+ * @returns the anchor, or null while no token stream is live.
+ */
+export function useFirstTokenAt(running: boolean, partial: PartialAssistant | null): number | null {
+  const [anchor, setAnchor] = useState<number | null>(null)
+  const key = partial === null ? null : `${partial.turn}\u0000${partial.step}`
+  const hasTokens = partial !== null && estimatePartialTokens(partial) > 0
+  const lastKey = useRef<string | null>(null)
+  useEffect(() => {
+    if (!running || key === null || !hasTokens) {
+      lastKey.current = null
+      setAnchor(null)
+      return
+    }
+    if (lastKey.current !== key) {
+      lastKey.current = key
+      setAnchor(Date.now())
+    }
+    // Same key with live tokens: keep the existing anchor (stamped once).
+  }, [running, key, hasTokens])
+  return anchor
 }
