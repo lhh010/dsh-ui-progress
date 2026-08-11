@@ -23,7 +23,7 @@ DSH Web UI 会话进度插件：为 DeepSeek Harness 的 Web GUI 的输入框停
 
 > **兼容性说明**：`v0.8.0` 构建基于 snapshot0808 开发，同时兼容 snapshot0809（`snapshots/20260809T140917Z`），实机验证通过；`v0.9.0` 为原生 snapshot0809 构建；`v0.9.1` 面向 snapshot0810（`snapshots/20260810T155924Z`，默认版本）。
 
-> **npm 发版兼容**：兼容 DSH npm 基线 `0.0.1-20260810T155924Z`（snapshot0810 的 npm 发版）。实测：npm 基线安装后运行时加载、src 对基线构建产物 typecheck（测试 fixture 存在一处与基线无关的既有漂移）、`window.__DSH_BOOT__` 清单与 `/plugins/<id>/client.js`（0810 基线实机）均通过。注意：`peerDependencies.cordis` 为 `^4.0.0-rc.7`，与基线 vendored `cordis@0.0.1-20260810T155924Z` 不匹配——纯 `npm install` 需加 `--legacy-peer-deps`；经 `dsh plugin`/pnpm 安装自动处理（为插件嵌套公网 cordis），运行不受影响。
+> **npm 发版兼容**：兼容 DSH npm 发版 `@deepseek-ai/dsh@0.0.1-rc.1`（即 snapshot0810 的 npm 发版；`npx -p @deepseek-ai/dsh@0.0.1-rc.1 dsh web` 可访问指定版本并启动，lib 生产模式）。实测（同源本地基线）：npm 基线安装后运行时加载、src 对基线构建产物 typecheck（测试 fixture 存在一处与基线无关的既有漂移）、`window.__DSH_BOOT__` 清单与 `/plugins/<id>/client.js` 均通过。注意：`peerDependencies.cordis` 声明为 `^4.0.0-rc.7`，而 npm 发版将 vendored `cordis` 一并按 `0.0.1-rc.?` 统一预发布版本号发布——纯 `npm install` 报 peer 冲突（ERESOLVE）时加 `--legacy-peer-deps` 即可；经 `dsh plugin`/pnpm 安装自动处理，运行不受影响。
 
 > git 依赖方式固定 tag：`pnpm add '@dsh-external/dsh-ui-progress@github:dsh-external/dsh-ui-progress#v0.9.1'`（0809 用户用 `#v0.9.0`，0808 用户用 `#v0.8.0`，0807 用户用 `#v0.6.0`，0805 用户用 `#v0.1.0`）。
 
