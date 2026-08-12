@@ -21,9 +21,9 @@ DSH Web UI 会话进度插件：为 DeepSeek Harness 的 Web GUI 的输入框停
 | `v0.9.0` | `snapshots/20260809T140917Z`（snapshot0809） | 新构建（原生 0809）：运行中新增**实时 token 生成速率**（自校准估算 + 1s 滑动窗口平滑，首 token 到达起算，贴近真实 provider usage） |
 | `v0.9.1`（默认） | `snapshots/20260810T155924Z`（snapshot0810） | 兼容性构建：客户端插件元数据从顶层 `dshClient` 迁移为嵌套 `dsh.client`（0810 的 ClientModuleHostService 只读该字段；顶层 `dshClient` 被静默忽略），inject/platform 原样保留 |
 
-> **兼容性说明**：`v0.8.0` 构建基于 snapshot0808 开发，同时兼容 snapshot0809（`snapshots/20260809T140917Z`），实机验证通过；`v0.9.0` 为原生 snapshot0809 构建；`v0.9.1` 面向 snapshot0810（`snapshots/20260810T155924Z`，默认版本）。
+> **兼容性说明**：`v0.8.0` 构建基于 snapshot0808 开发，同时兼容 snapshot0809（`snapshots/20260809T140917Z`），实机验证通过；`v0.9.0` 为原生 snapshot0809 构建；`v0.9.1` 面向 snapshot0810（`snapshots/20260810T155924Z`，默认版本），同时兼容 snapshot0811（`snapshots/20260811T152241Z`，0811 实机 boot 验证通过，见下）。
 
-> **npm 发版兼容**：兼容 DSH npm 发版 `@deepseek-ai/dsh@0.0.1-rc.1`（即 snapshot0810 的 npm 发版；`npx -p @deepseek-ai/dsh@0.0.1-rc.1 dsh web` 可访问指定版本并启动，lib 生产模式）。实测（同源本地基线）：npm 基线安装后运行时加载、src 对基线构建产物 typecheck（测试 fixture 存在一处与基线无关的既有漂移）、`window.__DSH_BOOT__` 清单与 `/plugins/<id>/client.js` 均通过。注意：`peerDependencies.cordis` 声明为 `^4.0.0-rc.7`，而 npm 发版将 vendored `cordis` 一并按 `0.0.1-rc.?` 统一预发布版本号发布——纯 `npm install` 报 peer 冲突（ERESOLVE）时加 `--legacy-peer-deps` 即可；经 `dsh plugin`/pnpm 安装自动处理，运行不受影响。
+> **npm 发版兼容**：兼容 DSH npm 发版 `@deepseek-ai/dsh@0.0.1-rc.2`（即 snapshot0811 的 npm 发版；`npx -p @deepseek-ai/dsh@0.0.1-rc.2 dsh web` 可访问指定版本并启动，lib 生产模式）。实测（npm 基线）：node 半/invariant 半在 rc.2 consumer 中加载成功；client 半经 `window.__ModuleLoader__.load` 正确注册；src 对 rc.2 基线构建产物 typecheck——除 `cordis` 裸导入外全部通过（见 0811 兼容要点；测试 fixture 存在与基线无关的既有漂移）。注意：0811 起 vendored cordis 更名为 `@deepseek-ai/cordis@4.0.1-rc.1`（npm 发版不再发布 `cordis` 名义的 vendored 包），`peerDependencies.cordis` 声明为 `^4.0.0-rc.7` 时纯 `npm install` 可能报 peer 冲突（ERESOLVE）——加 `--legacy-peer-deps` 可临时绕过，建议将 peer 与类型导入迁移至 `@deepseek-ai/cordis`（见下）；经 `dsh plugin`/pnpm 安装自动处理，运行不受影响。
 
 > git 依赖方式固定 tag：`pnpm add '@dsh-external/dsh-ui-progress@github:dsh-external/dsh-ui-progress#v0.9.1'`（0809 用户用 `#v0.9.0`，0808 用户用 `#v0.8.0`，0807 用户用 `#v0.6.0`，0805 用户用 `#v0.1.0`）。
 
@@ -38,6 +38,12 @@ DSH Web UI 会话进度插件：为 DeepSeek Harness 的 Web GUI 的输入框停
 
 - **元数据发现变化**：0810 的 ClientModuleHostService 在启动时扫描已加载插件的 package.json，但只读**嵌套 `dsh.client`**（`packages/client/modules/src/index.ts` 的 `resolveMeta`，`pkg.dsh.client`）；顶层 `dshClient` 字段读不到会静默丢出 boot 图——无日志、无报错，"启动顺利但插件全没"。本插件已从顶层 `dshClient` 迁移为嵌套 `dsh.client`（inject/platform 原样保留），0810 实机验证 `window.__DSH_BOOT__` 清单包含本插件、进度条各态正常。
 - **无需重构建**：`lib/client.js` 构建产物不变，package.json 不参与编译；symlink 安装改源仓库即生效，无需重装。
+
+## 0811 兼容要点（snapshot0811，实机验证）
+
+- **cordis 更名（本快照唯一影响本插件的官方变化）**：0811 将 vendored cordis 由 `cordis@4.0.0-rc.7` 更名为 **`@deepseek-ai/cordis@4.0.1-rc.1`**（官方 client 包随之全部改从 `@deepseek-ai/cordis` 导入）。本插件对 cordis 只有 type-only 导入（`src/invariant.ts` 的 `import type { Context } from 'cordis'`），**构建产物（lib/*.js）零 cordis 运行时导入**——更名不影响已构建 bundle 的运行时加载；但源码对 npm rc.2 基线 typecheck 时 `cordis` 裸导入报 TS2307（仅此一处），**将类型导入迁移为 `from '@deepseek-ai/cordis'` 后全绿**。建议同步把 `peerDependencies.cordis` 迁移为 `@deepseek-ai/cordis: ^4.0.1-rc.1`。
+- **实机 boot 验证**：snapshot0811（`snapshots/20260811T152241Z`）web 启动后 `window.__DSH_BOOT__` 清单包含 `@dsh-external/dsh-ui-progress`（inject: `dsh-client-locale`/`dsh-client-runtime`/`dsh-client-ui-conversation`），`/plugins/@dsh-external/dsh-ui-progress/client.js` 返回 200。本插件使用的槽位 `conversation.input.dock`（list/session）、`useSession` 快照与 todos 投影契约在 0811 上均保持声明。
+- **测试 fixture 漂移**：typecheck 的 src 全绿；`tests/session-progress-bar.spec.tsx` 有两处 fixture 未跟上 0811 新增字段——`ConversationSnapshot.views`（0811 新增视图快照存储）与 `InputState.imageIds`（0811 新增草稿图片附件）——补齐后即可通过（源码与构建产物不受影响）。
 
 ## 功能
 
