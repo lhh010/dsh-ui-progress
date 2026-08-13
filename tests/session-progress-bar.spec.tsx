@@ -48,6 +48,7 @@ type BarOverrides = {
 function makeSnapshot(overrides: BarOverrides = {}): ConversationSnapshot {
   return {
     sessionId: 'session-1' as SessionId,
+    views: { get: () => undefined },
     chat: {} as ConversationSnapshot['chat'],
     nodes: overrides.nodes ?? [],
     turnTimings: new Map([[1, { startTime: 1_000 }]]),
@@ -92,7 +93,7 @@ function barElement(overrides: BarOverrides = {}): ReactElement {
       // The dock owner share includes the live input state and the standard
       // session kit; the strip reads none of them (it consumes the session
       // snapshot and projection seats directly), minimal stubs suffice.
-      input={{ draft: '', draftRev: 0, phase: 'plain', occurrences: [], queue: [] }}
+      input={{ draft: '', imageIds: [], draftRev: 0, phase: 'plain', occurrences: [], queue: [] }}
       sessionId={session.sessionId}
       useSession={(() => undefined) as unknown as SessionProgressBarProps['useSession']}
       useInput={(() => undefined) as unknown as SessionProgressBarProps['useInput']}

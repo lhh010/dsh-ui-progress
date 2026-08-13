@@ -8,6 +8,9 @@ importers:
 
   .:
     devDependencies:
+      '@deepseek-ai/cordis':
+        specifier: link:../.dsh/source/current/vendor/cordis
+        version: link:../.dsh/source/current/vendor/cordis
       '@deepseek-ai/dsh-client-locale':
         specifier: link:../.dsh/source/current/packages/client/locale
         version: link:../.dsh/source/current/packages/client/locale
@@ -24,8 +27,8 @@ importers:
         specifier: link:../.dsh/source/current/packages/client/ui-slots
         version: link:../.dsh/source/current/packages/client/ui-slots
       '@deepseek-ai/dsh-invariants':
-        specifier: link:../.dsh/source/current/packages/support/invariants
-        version: link:../.dsh/source/current/packages/support/invariants
+        specifier: link:../.dsh/source/current/packages/runtime-diagnostics/invariants
+        version: link:../.dsh/source/current/packages/runtime-diagnostics/invariants
       '@deepseek-ai/dsh-tool-todo':
         specifier: link:../.dsh/source/current/packages/todo/tool-todo
         version: link:../.dsh/source/current/packages/todo/tool-todo
@@ -41,9 +44,6 @@ importers:
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
-      cordis:
-        specifier: link:../.dsh/source/current/vendor/cordis
-        version: link:../.dsh/source/current/vendor/cordis
       jsdom:
         specifier: ^26.0.0
         version: 26.1.0
