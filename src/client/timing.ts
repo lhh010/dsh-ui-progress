@@ -7,7 +7,7 @@
  * the same way: from the snapshot's partial alone.
  */
 import { useEffect, useRef, useState } from 'react'
-import type { PartialAssistant } from '@deepseek-ai/dsh-client-runtime/client'
+import type { PartialAssistant } from '@deepseek-ai/dsh-client-ui-chat/client'
 import { liveTokenRate, weightedPartialChars } from './token-rate.ts'
 
 /**

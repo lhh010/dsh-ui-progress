@@ -5,7 +5,7 @@
  * functions — no React, no framework state, no DOM.
  */
 import { describe, expect, it } from 'vitest'
-import type { ConversationNode, PartialAssistant } from '@deepseek-ai/dsh-client-runtime/client'
+import type { ConversationNode, PartialAssistant } from '@deepseek-ai/dsh-client-ui-chat/client'
 import {
   formatTokenRate, latestTokenDensity, liveTokenRate, streamedTokenEstimate, weightedChars,
   weightedPartialChars,

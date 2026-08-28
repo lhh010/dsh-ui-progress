@@ -1,20 +1,26 @@
 /**
  * Pure session-state derivations for the session progress strip. Everything
- * here is a function of the live {@link ConversationSnapshot} (plus the
- * `todos` projection) — no React, no rendering. The component consumes these
- * through narrow accessors.
+ * here is a function of live data slices — the Chat view's legacy
+ * compatibility projection (nodes, turn timings, partial, running calls),
+ * the Chat view's turn timeline, and the Session lifecycle snapshot's
+ * lastAgentError — plus the `todos` projection. No React, no rendering;
+ * the component feeds these slices from `useConversation` (Chat view
+ * snapshot) and the dock owner's Session snapshot.
  */
-import type { ConversationSnapshot, TodoItem } from '@deepseek-ai/dsh-client-runtime/client'
+import type { ChatSnapshot, TodoItem } from '@deepseek-ai/dsh-client-ui-chat/client'
 import { etaOf, parseArgs } from './args.ts'
+
+/** The Chat view's legacy compatibility projection — the strip's node/timing data slice. */
+export type ChatLegacy = ChatSnapshot['legacy']
 
 /**
  * Count settled tool results in the current snapshot window. The node stream
  * is the presentation-truth source: a result node exists exactly when a tool
  * call completed (and re-renders live as the window advances).
  */
-export function settledToolCount(snapshot: ConversationSnapshot): number {
+export function settledToolCount(legacy: ChatLegacy): number {
   let count = 0
-  for (const node of snapshot.nodes) {
+  for (const node of legacy.nodes) {
     if (node.kind === 'tool-result') count += 1
   }
   return count
@@ -25,22 +31,22 @@ export function settledToolCount(snapshot: ConversationSnapshot): number {
  * reasoning block and no tool call is in flight (a running tool is the more
  * specific state and wins the label).
  */
-export function isReasoning(snapshot: ConversationSnapshot): boolean {
-  return snapshot.partial?.blocks.some(block => block.kind === 'reasoning') ?? false
+export function isReasoning(legacy: ChatLegacy): boolean {
+  return legacy.partial?.blocks.some(block => block.kind === 'reasoning') ?? false
 }
 
 /** The in-flight tool name when running; undefined when nothing is executing. */
-export function runningTool(snapshot: ConversationSnapshot): string | undefined {
-  return snapshot.runningCalls[0]?.name
+export function runningTool(legacy: ChatLegacy): string | undefined {
+  return legacy.runningCalls[0]?.name
 }
 
 /**
  * Start time of the running turn — the in-window turn entry with no end yet.
  * Null when running but no in-window turn start exists.
  */
-export function runningTurnStart(snapshot: ConversationSnapshot): number | null {
+export function runningTurnStart(legacy: ChatLegacy): number | null {
   let start: number | null = null
-  for (const timing of snapshot.turnTimings.values()) {
+  for (const timing of legacy.turnTimings.values()) {
     if (timing.endTime === undefined) start = timing.startTime
   }
   return start
@@ -50,9 +56,9 @@ export function runningTurnStart(snapshot: ConversationSnapshot): number | null 
  * Wall duration of the last settled in-window turn; null when no turn has
  * finished yet. Only read while idle (the running turn has no end entry).
  */
-export function lastTurnDuration(snapshot: ConversationSnapshot): number | null {
+export function lastTurnDuration(legacy: ChatLegacy): number | null {
   let duration: number | null = null
-  for (const timing of snapshot.turnTimings.values()) {
+  for (const timing of legacy.turnTimings.values()) {
     if (timing.endTime !== undefined) duration = Math.max(0, timing.endTime - timing.startTime)
   }
   return duration
@@ -64,10 +70,10 @@ export function lastTurnDuration(snapshot: ConversationSnapshot): number | null 
  * report is the model's last word: if it carries no eta, the strip shows no
  * ETA even when an older report did.
  */
-export function latestReportEta(snapshot: ConversationSnapshot): string | null {
+export function latestReportEta(legacy: ChatLegacy): string | null {
   let latestTime = -1
   let latestEta: string | null = null
-  for (const node of snapshot.nodes) {
+  for (const node of legacy.nodes) {
     if (node.kind !== 'tool-result' || node.call?.name !== 'report_progress') continue
     const time = node.callTime ?? node.time
     if (time >= latestTime) {
@@ -75,7 +81,7 @@ export function latestReportEta(snapshot: ConversationSnapshot): string | null {
       latestEta = etaOf(parseArgs(node.call.argsRaw))
     }
   }
-  for (const call of snapshot.runningCalls) {
+  for (const call of legacy.runningCalls) {
     if (call.name !== 'report_progress') continue
     if (call.time >= latestTime) {
       latestTime = call.time
@@ -105,7 +111,7 @@ export function todoCounts(todos: readonly TodoItem[] | null | undefined): { don
  * session-overall progress has no dedicated projection, and a fake percentage
  * (the removed per-tool-result window segments) is worse than none.
  */
-export function progressPercent(snapshot: ConversationSnapshot, todos: readonly TodoItem[] | null | undefined): number {
+export function progressPercent(legacy: ChatLegacy, todos: readonly TodoItem[] | null | undefined): number {
   const counts = todoCounts(todos)
   if (counts !== null) return Math.round(((counts.done + counts.active) / counts.total) * 100)
   return 100
@@ -138,23 +144,28 @@ const INTERRUPTED_ERROR_CODES = new Set([
  * manual stop, an API failure, or another unexpected break.
  *
  * Primary signal (DSH 0.1.x): the latest completed turn's `turn/end` reason,
- * read off the timeline — a stop leaves no per-node trace for every case
- * (no partial content to freeze, no in-flight call to error), but the turn
- * always ends with reason 'aborted' (cancel) or 'interrupted' (repair).
+ * read off the Chat view's timeline — a stop leaves no per-node trace for
+ * every case (no partial content to freeze, no in-flight call to error), but
+ * the turn always ends with reason 'aborted' (cancel) or 'interrupted'
+ * (repair). `lastAgentError` comes from the Session lifecycle snapshot
+ * (live agent failures with no turn position).
  *
  * Fallback (windowed node traces, covers older hosts and error-ended turns):
  * an interrupted assistant node (frozen partial), tool-result nodes whose
- * error code marks a cut-off call, and turn-error nodes (terminal failure);
- * live agent failures with no turn position arrive through lastAgentError.
+ * error code marks a cut-off call, and turn-error nodes (terminal failure).
  * Only the latest completed turn is judged (its turn/end seq is the
  * boundary — derived interruption nodes ride fractional seqs just below
  * it), so an interruption followed by a clean turn does not keep the bar
  * orange. Window-scoped by design — paging or compaction drops old markers.
  */
-export function latestTurnInterrupted(snapshot: ConversationSnapshot): boolean {
-  if (snapshot.lastAgentError !== null) return true
+export function latestTurnInterrupted(
+  chat: ChatSnapshot | undefined,
+  legacy: ChatLegacy,
+  lastAgentError: string | null,
+): boolean {
+  if (lastAgentError !== null) return true
   // Authoritative turn/end reason when the timeline is available.
-  const turns = snapshot.chat?.timeline?.turns
+  const turns = chat?.timeline.turns
   if (turns !== undefined) {
     const latest = [...turns.entries()].sort((a, b) => a[0] - b[0]).at(-1)?.[1]
     const reason = latest?.end?.data?.reason?.kind
@@ -163,12 +174,12 @@ export function latestTurnInterrupted(snapshot: ConversationSnapshot): boolean {
   // The latest completed in-window turn and the end seq of the turn before
   // it: the previous end seq is the exact lower boundary for the latest
   // turn's own nodes (every later turn's events sit above it).
-  const ends = [...snapshot.turnEnds.entries()].sort((a, b) => a[0] - b[0])
+  const ends = [...legacy.turnEnds.entries()].sort((a, b) => a[0] - b[0])
   const latestEnd = ends.at(-1)
   if (latestEnd === undefined) return false
   const latestEndSeq = latestEnd[1]
   const prevEndSeq = ends.at(-2)?.[1] ?? 0
-  for (const node of snapshot.nodes) {
+  for (const node of legacy.nodes) {
     if (node.seq <= prevEndSeq || node.seq > latestEndSeq) continue
     if (node.kind === 'assistant' && node.interrupted === true) return true
     if (node.kind === 'turn-error') return true

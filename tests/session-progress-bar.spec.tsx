@@ -3,17 +3,31 @@
  * Component-level smoke tests for SessionProgressBar: the resident strip
  * renders the live token-rate chip while the model streams (and only then),
  * computed as a sliding-window average that changes at most once per second.
- * Every @deepseek-ai face is stubbed — icons via vi.mock, session/projection
- * seats via props — so the suite needs no resolution into the harness
- * snapshot's sources; CSS Modules stub to empty objects under vitest's
- * default css handling. The pure rate math itself is pinned by
- * tests/token-rate.spec.ts; this suite proves the wiring (anchor hook +
- * sliding-window clock + render gates).
+ * Every @deepseek-ai face is stubbed — icons via vi.mock, the standard-kit
+ * selector seats via plain scripted props — so the suite needs no resolution
+ * into the harness snapshot's sources; CSS Modules stub to empty objects
+ * under vitest's default css handling. The pure rate math itself is pinned
+ * by tests/token-rate.spec.ts; this suite proves the wiring (anchor hook +
+ * sliding-window clock + render gates) against the new slice-based props
+ * (Session snapshot + Chat view legacy projection + pending-interaction map).
  */
 import { act, cleanup, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { ReactElement } from 'react'
-import type { ConversationSnapshot, SessionId } from '@deepseek-ai/dsh-client-runtime/client'
+import type { ChatSnapshot, ConversationNode, PartialAssistant } from '@deepseek-ai/dsh-client-ui-chat/client'
+// Type-only merges so the stubbed standard-kit props carry their declared types.
+import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
+import type {} from '@deepseek-ai/dsh-client-ui-chat/client'
+import type {} from '@deepseek-ai/dsh-client-ui-session/client'
+import type {} from '@deepseek-ai/dsh-tool-todo/client'
+import type {
+  ConversationSnapshot, ConversationViewSnapshotStore,
+} from '@deepseek-ai/dsh-client-ui-conversation/client'
+import type {
+  SessionListState, SessionSnapshot, SessionSummary,
+} from '@deepseek-ai/dsh-api-session-controller/client'
+import type { SessionPendingInteraction } from '@deepseek-ai/dsh-client-ui-session/client'
+import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import { SessionProgressBar, type SessionProgressBarProps } from '../src/client/SessionProgressBar.tsx'
 import { zh } from '../src/client/locales.ts'
 
@@ -35,31 +49,41 @@ function makeT(): SessionProgressBarProps['t'] {
   return t as unknown as SessionProgressBarProps['t']
 }
 
-const useProjection = (() => undefined) as unknown as SessionProgressBarProps['useProjection']
-const useSessions = (() => ({ byId: {} })) as unknown as SessionProgressBarProps['useSessions']
+const SID = 'session-1' as SessionId
 
 type BarOverrides = {
   running?: boolean
-  partial?: ConversationSnapshot['partial']
-  pending?: ConversationSnapshot['pending']
-  nodes?: ConversationSnapshot['nodes']
+  partial?: PartialAssistant | null
+  pending?: ReadonlyMap<SessionId, SessionPendingInteraction>
+  nodes?: readonly ConversationNode[]
 }
 
-function makeSnapshot(overrides: BarOverrides = {}): ConversationSnapshot {
+/** The Chat view snapshot the useConversation stub serves (legacy slice carries the fixtures). */
+function chatOf(overrides: BarOverrides = {}): ChatSnapshot {
   return {
-    sessionId: 'session-1' as SessionId,
-    views: { get: () => undefined },
-    chat: {} as ConversationSnapshot['chat'],
-    nodes: overrides.nodes ?? [],
-    turnTimings: new Map([[1, { startTime: 1_000 }]]),
-    turnEnds: new Map(),
-    partial: overrides.partial ?? null,
-    runningCalls: [],
-    pending: overrides.pending ?? [],
+    order: [],
+    nodes: { get: () => undefined, values: () => [] },
+    locations: { getTurn: () => [], getStep: () => [] },
+    navigation: { items: () => [] },
+    timeline: { turnOrder: [], turns: new Map() },
+    legacy: {
+      nodes: overrides.nodes ?? [],
+      turnTimings: new Map([[1, { startTime: 1_000 }]]),
+      turnEnds: new Map(),
+      partial: overrides.partial ?? null,
+      runningCalls: [],
+    },
+  } as unknown as ChatSnapshot
+}
+
+/** The Session lifecycle snapshot the dock owner share carries. */
+function sessionOf(overrides: Pick<BarOverrides, 'running'> = {}): SessionSnapshot {
+  return {
+    sessionId: SID,
     queue: [],
+    pendingSubmissions: [],
     running: overrides.running ?? false,
     subagent: null,
-    composerPhase: 'active',
     removed: false,
     openState: 'open',
     openError: null,
@@ -68,7 +92,38 @@ function makeSnapshot(overrides: BarOverrides = {}): ConversationSnapshot {
     promptError: null,
     blank: false,
     lastAgentError: null,
+    promptAttempted: true,
+    awaitingFirstTurn: false,
   }
+}
+
+/** The assembled Conversation snapshot whose chat view serves the fixture. */
+function conversationOf(chat: ChatSnapshot): ConversationSnapshot {
+  const views = { get: () => chat } as ConversationViewSnapshotStore
+  return { views, activeTargets: new Set(['chat']) } as unknown as ConversationSnapshot
+}
+
+function barElement(overrides: BarOverrides = {}): ReactElement {
+  const chat = chatOf(overrides)
+  const conversation = conversationOf(chat)
+  const emptyList = { byId: {} } as SessionListState
+  return (
+    <SessionProgressBar
+      session={sessionOf(overrides)}
+      sessionId={SID}
+      t={makeT()}
+      useConversation={((selector: (s: ConversationSnapshot) => unknown) => selector(conversation)) as never as SessionProgressBarProps['useConversation']}
+      useProjection={((key: 'todos') => undefined) as unknown as SessionProgressBarProps['useProjection']}
+      useSessions={((selector: (s: SessionListState) => unknown) => selector(emptyList)) as never as SessionProgressBarProps['useSessions']}
+      useSessionPendingInteraction={((selector: (s: ReadonlyMap<SessionId, SessionPendingInteraction>) => unknown) => selector(overrides.pending ?? new Map())) as never as SessionProgressBarProps['useSessionPendingInteraction']}
+    />
+  )
+}
+
+/** Render the strip and return a rerender that swaps the fixtures (streaming simulation). */
+function renderBar(overrides: BarOverrides = {}): { rerender: (next: BarOverrides) => void } {
+  const view = render(barElement(overrides))
+  return { rerender: (next: BarOverrides) => view.rerender(barElement(next)) }
 }
 
 /** Full streaming partial: 4 CJK-wide chars -> 4 estimated tokens. */
@@ -85,33 +140,6 @@ const PARTIAL_START = {
   blocks: [{ kind: 'text' as const, text: '你好' }],
 }
 
-function barElement(overrides: BarOverrides = {}): ReactElement {
-  const session = makeSnapshot(overrides)
-  return (
-    <SessionProgressBar
-      session={session}
-      // The dock owner share includes the live input state and the standard
-      // session kit; the strip reads none of them (it consumes the session
-      // snapshot and projection seats directly), minimal stubs suffice.
-      input={{ draft: '', imageIds: [], draftRev: 0, phase: 'plain', occurrences: [], queue: [] }}
-      sessionId={session.sessionId}
-      useSession={(() => undefined) as unknown as SessionProgressBarProps['useSession']}
-      useInput={(() => undefined) as unknown as SessionProgressBarProps['useInput']}
-      inputActions={{} as unknown as SessionProgressBarProps['inputActions']}
-      t={makeT()}
-      useProjection={useProjection}
-      useSessions={useSessions}
-      useWorkspaces={(() => []) as unknown as SessionProgressBarProps['useWorkspaces']}
-    />
-  )
-}
-
-/** Render the strip and return a rerender that swaps the snapshot (streaming simulation). */
-function renderBar(overrides: BarOverrides = {}): { rerender: (next: BarOverrides) => void } {
-  const view = render(barElement(overrides))
-  return { rerender: (next: BarOverrides) => view.rerender(barElement(next)) }
-}
-
 /** A settled step priced 8 real output tokens over 4 weighted chars -> density 2. */
 const CALIBRATED_NODES = [{
   kind: 'assistant',
@@ -121,7 +149,7 @@ const CALIBRATED_NODES = [{
   step: 1,
   blocks: STREAMING_PARTIAL.blocks,
   usage: { outputTokens: 8 },
-}] as unknown as ConversationSnapshot['nodes']
+}] as unknown as ConversationNode[]
 
 describe('SessionProgressBar live token rate', () => {
   it('mounts and renders the running state from the zh dictionary', () => {
@@ -170,7 +198,9 @@ describe('SessionProgressBar live token rate', () => {
   it('hides the chip while a human interaction waits (paused stream)', () => {
     vi.useFakeTimers()
     vi.setSystemTime(10_000)
-    const pending = [{ id: 'p1', kind: 'approval' as const }] as unknown as ConversationSnapshot['pending']
+    const pending = new Map<SessionId, SessionPendingInteraction>([
+      [SID, { key: 'p1', kind: 'approval', sessionId: SID } as SessionPendingInteraction],
+    ])
     renderBar({ running: true, partial: STREAMING_PARTIAL, pending })
     act(() => {
       vi.advanceTimersByTime(4_000)

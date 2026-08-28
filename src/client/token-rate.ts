@@ -14,7 +14,7 @@
  * first-token observation time.
  */
 
-import type { AssistantBlock, ConversationNode, PartialAssistant } from '@deepseek-ai/dsh-client-runtime/client'
+import type { AssistantBlock, ConversationNode, PartialAssistant } from '@deepseek-ai/dsh-client-ui-chat/client'
 
 /**
  * Wide CJK characters priced at one token each: CJK punctuation/forms,

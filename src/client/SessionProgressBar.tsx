@@ -1,18 +1,22 @@
 /**
  * SessionProgressBar: a resident session-progress strip in the composer
- * input dock, derived entirely from the live {@link ConversationSnapshot}
- * plus the `todos` session projection.
+ * input dock, derived entirely from the live Chat view snapshot (via the
+ * standard `useConversation` seat) plus the dock owner's Session lifecycle
+ * snapshot and the `todos` session projection.
  *
- * The bar needs no model-facing tool: it reads the framework's `useSession`
- * hook and the `todos` projection (session-scope standard kit) and renders
- * the real execution state — whether the turn is running, which tool call is
- * in flight, whether the model is emitting reasoning, and the task
- * completion ratio. Progress follows the truth order: a live todos list wins
- * (completed/total is the real task completion — five tasks with two done
- * reads 40%); without one the fill rests at its 100% default, because
- * session-overall progress has no dedicated projection and a fake percentage
- * is worse than none. Animation follows the state: a spinning glyph and
- * shimmer glide while running, a static filled bar when idle.
+ * The bar needs no model-facing tool: it reads the framework's standard
+ * seats and renders the real execution state — whether the turn is running,
+ * which tool call is in flight, whether the model is emitting reasoning, and
+ * the task completion ratio. Node, timing, and streaming data come from the
+ * Chat view's legacy compatibility projection (`.legacy`); the turn/end
+ * interruption signal comes from the Chat view's timeline; running state and
+ * lastAgentError come from the Session snapshot. Progress follows the truth
+ * order: a live todos list wins (completed/total is the real task
+ * completion — five tasks with two done reads 40%); without one the fill
+ * rests at its 100% default, because session-overall progress has no
+ * dedicated projection and a fake percentage is worse than none. Animation
+ * follows the state: a spinning glyph and shimmer glide while running, a
+ * static filled bar when idle.
  *
  * While running, the strip also shows a live elapsed readout (since the
  * current turn started). The ETA is never extrapolated: it rides the model's
@@ -22,10 +26,11 @@
  *
  * Attention state: when this session or any descendant subagent session
  * waits on a human interaction (approval / question / plan review), the bar
- * switches to the amber warning palette and the label names the wait —
- * subagent waits surface through the global session list (`origin:
- * 'subagent'` rows carry `pendingInteraction`; the sidebar hides them, so
- * this strip is where the main agent surfaces them).
+ * switches to the amber warning palette and the label names the wait — the
+ * session's own wait reads through the global `useSessionPendingInteraction`
+ * seat; subagent waits surface through the same map plus the global session
+ * list (`origin: 'subagent'` rows carry `parentId`; the sidebar hides
+ * them, so this strip is where the main agent surfaces them).
  *
  * Interrupted state: when the session's latest completed turn was stopped —
  * a manual stop, an API failure, or another unexpected break — the bar
@@ -46,20 +51,34 @@
  * comparable to the post-turn value on the conversation StatsLine.
  */
 import { IconLoadingOutline16, IconSparkle16, IconWarningOutline16 } from '@deepseek-ai/dsh-client-ui-primitives'
-import type { SessionId, SessionSummary } from '@deepseek-ai/dsh-client-runtime/client'
+import type { SessionSummary } from '@deepseek-ai/dsh-api-session-controller/client'
+import type { SessionPendingInteraction } from '@deepseek-ai/dsh-client-ui-session/client'
+import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
 import clsx from 'clsx'
 import type { ReactNode } from 'react'
 import css from './SessionProgressBar.module.css'
 import {
   isReasoning, lastTurnDuration, latestReportEta, latestTurnInterrupted, progressPercent,
-  runningTool, runningTurnStart, settledToolCount, todoCounts,
+  runningTool, runningTurnStart, settledToolCount, todoCounts, type ChatLegacy,
 } from './session-state.ts'
 import { formatElapsed, TOKEN_RATE_WINDOW_MS, useFirstTokenAt, useNow, useWindowedTokenRate } from './timing.ts'
 import { formatTokenRate, latestTokenDensity, streamedTokenEstimate } from './token-rate.ts'
 
-/** Dock entry props: InputZone owner share + session standard kit + locale seat. */
+/** Dock entry props: InputZone owner share + session/global standard kit + locale seat. */
 export type SessionProgressBarProps = import('@deepseek-ai/dsh-client-ui-slots').PropsRuntime<'conversation.input.dock'> & PropsLocale<'progress'>
+
+/**
+ * Stable empty legacy slice for sessions whose Chat view target has not
+ * registered yet (module-level so the fallback reference never moves).
+ */
+const EMPTY_LEGACY: ChatLegacy = {
+  nodes: [],
+  turnTimings: new Map(),
+  turnEnds: new Map(),
+  partial: null,
+  runningCalls: [],
+}
 
 /** Pending human interactions of this session's subagent subtree, by kind. */
 export interface SubagentPending {
@@ -68,16 +87,30 @@ export interface SubagentPending {
   plans: number
 }
 
+/** The three pending-interaction kinds the strip labels; null for unknown kinds. */
+type PendingKind = 'approval' | 'question' | 'plan-review'
+
+/** Narrow a pending-interaction discriminator to the labeled kinds. */
+function pendingKindOf(kind: string | null | undefined): PendingKind | null {
+  if (kind === 'approval' || kind === 'question' || kind === 'plan-review') return kind
+  return null
+}
+
 /**
  * Walk the session list from the given root down its `parentId` chain and
  * count pending human interactions on subagent sessions. The sidebar hides
- * subagent rows; the global list still carries them, so the main strip can
- * surface their waits.
+ * subagent rows; the pending-interaction map still carries them, so the
+ * main strip can surface their waits.
  * @param byId - the global session-list index.
+ * @param pending - pending interactions by session id.
  * @param rootId - the strip's owning session id.
  * @returns pending counts per kind across the whole subtree.
  */
-function subagentPendingState(byId: Record<SessionId, SessionSummary>, rootId: SessionId): SubagentPending {
+function subagentPendingState(
+  byId: Record<SessionId, SessionSummary>,
+  pending: ReadonlyMap<SessionId, SessionPendingInteraction>,
+  rootId: SessionId,
+): SubagentPending {
   const children = new Map<SessionId, SessionId[]>()
   for (const [sid, row] of Object.entries(byId)) {
     if (row.parentId === undefined || row.origin !== 'subagent') continue
@@ -96,25 +129,29 @@ function subagentPendingState(byId: Record<SessionId, SessionSummary>, rootId: S
       if (seen.has(childId)) continue
       seen.add(childId)
       queue.push(childId)
-      const status = byId[childId]?.pendingInteraction
-      if (status === 'approval') approvals += 1
-      else if (status === 'question') questions += 1
-      else if (status === 'plan-review') plans += 1
+      const kind = pendingKindOf(pending.get(childId)?.kind)
+      if (kind === 'approval') approvals += 1
+      else if (kind === 'question') questions += 1
+      else if (kind === 'plan-review') plans += 1
     }
   }
   return { approvals, questions, plans }
 }
 
 /**
- * The attention label: this session's own wait (approval/question) plus the
- * subagent subtree's waits, combined with a separator when both exist.
+ * The attention label: this session's own wait (approval/question/plan
+ * review) plus the subagent subtree's waits, combined with a separator when
+ * both exist.
  */
 function pendingLabel(
-  ownKind: 'approval' | 'question' | null,
+  ownKind: PendingKind | null,
   sub: SubagentPending,
   t: SessionProgressBarProps['t'],
 ): string {
-  const ownText = ownKind === 'approval' ? t('bar.pendingApproval') : ownKind === 'question' ? t('bar.pendingQuestion') : null
+  const ownText = ownKind === 'approval' ? t('bar.pendingApproval')
+    : ownKind === 'question' ? t('bar.pendingQuestion')
+    : ownKind === 'plan-review' ? t('bar.pendingPlan')
+    : null
   const total = sub.approvals + sub.questions + sub.plans
   let subText: string | null = null
   if (total > 0) {
@@ -153,49 +190,53 @@ function stateLabel(
  * session or its subagent subtree) and interrupted stops (manual or
  * unexpected) each override the plain states with their attention palette.
  */
-export function SessionProgressBar({ session, t, useProjection, useSessions }: SessionProgressBarProps) {
-  // Defensive guard: InputZone.session is typed non-null, but a host passing
-  // no session must degrade to an empty dock instead of crashing.
+export function SessionProgressBar({
+  session, sessionId, t, useConversation, useProjection, useSessions, useSessionPendingInteraction,
+}: SessionProgressBarProps) {
+  // Defensive guard: the InputZone owner share types session non-null, but a
+  // host passing no session must degrade to an empty dock instead of crashing.
   // oxlint-disable-next-line typescript/no-unnecessary-condition
   if (session === undefined || session === null) return null
+  const chat = useConversation(conversation => conversation.views.get('chat'))
+  const legacy = chat?.legacy ?? EMPTY_LEGACY
   const todos = useProjection('todos')
-  const toolName = runningTool(session)
+  const toolName = runningTool(legacy)
   const running = session.running
-  const thinking = running && toolName === undefined && isReasoning(session)
+  const thinking = running && toolName === undefined && isReasoning(legacy)
   const counts = todoCounts(todos)
-  const percent = progressPercent(session, todos)
-  const turn = session.turnTimings.size
-  const settled = settledToolCount(session)
-  const turnStart = runningTurnStart(session)
+  const percent = progressPercent(legacy, todos)
+  const turn = legacy.turnTimings.size
+  const settled = settledToolCount(legacy)
+  const turnStart = runningTurnStart(legacy)
   const now = useNow(running, turnStart)
   const elapsed = turnStart !== null ? Math.max(0, now - turnStart) : null
   // Live token rate window: the streaming partial plus its first-visible-token
   // anchor; the rate value itself is derived below, once `pending` is known
   // (a paused stream would only decay, so the chip hides while attention waits).
-  const partial = session.partial
+  const partial = legacy.partial
   const firstTokenAt = useFirstTokenAt(running, partial)
-  const rateNow = useNow(running && firstTokenAt !== null, firstTokenAt)
   // ETA rides the model's own knowledge — never extrapolated from the fill.
-  const modelEta = running ? latestReportEta(session) : null
-  const lastTurn = running ? null : lastTurnDuration(session)
+  const modelEta = running ? latestReportEta(legacy) : null
+  const lastTurn = running ? null : lastTurnDuration(legacy)
   // A session that has finished at least one turn rests in the success
   // palette (light green); a never-run session keeps the neutral look.
   const completed = !running && turn > 0
   // Attention state: this session's own pending waits plus the subagent
   // subtree's (the sidebar hides subagent rows — this strip surfaces them).
-  const ownPending = session.pending[0]?.kind ?? null
-  const subPending = subagentPendingState(useSessions(s => s.byId), session.sessionId)
+  const pendingBySession = useSessionPendingInteraction(interactions => interactions)
+  const ownPending = pendingKindOf(pendingBySession.get(sessionId)?.kind)
+  const subPending = subagentPendingState(useSessions(s => s.byId), pendingBySession, sessionId)
   const pending = ownPending !== null || subPending.approvals + subPending.questions + subPending.plans > 0
   // Interrupted state: the latest completed turn was stopped (manual stop,
   // API failure, or another unexpected break) — orange-red, outranks the
   // running/done rests so the stop cannot be missed.
-  const interrupted = !running && latestTurnInterrupted(session)
+  const interrupted = !running && latestTurnInterrupted(chat, legacy, session.lastAgentError)
   // Live tokens/sec since the first visible token, self-calibrated to the
   // model's real tokenizer density (latest settled step's provider usage
   // over its weighted chars scales the partial; CJK-aware heuristic before
   // the first calibrated step). Smoothed through a sliding window so the
   // readout changes at most once per window instead of on every chunk.
-  const density = latestTokenDensity(session.nodes)
+  const density = latestTokenDensity(legacy.nodes)
   const tokenRate = useWindowedTokenRate(
     running && !pending && firstTokenAt !== null,
     firstTokenAt,
