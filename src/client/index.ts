@@ -21,8 +21,11 @@ import type {} from '@deepseek-ai/dsh-client-ui-session/client'
 import type {} from '@deepseek-ai/dsh-api-session-controller/client'
 // Type-only: the `todos` SessionProjectionMap key merge (single source, the todo domain's pure outlet).
 import type {} from '@deepseek-ai/dsh-tool-todo/client'
+// Type-only: pulls the renderer-owned slots service (ctx.slots Context merge).
+import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import { SessionProgressBar } from './SessionProgressBar.tsx'
 import { en, zh, type ProgressKey } from './locales.ts'
+import { applyWithCompat } from './compat.ts'
 
 export type { SessionProgressBarProps } from './SessionProgressBar.tsx'
 export type { ProgressKey } from './locales.ts'
@@ -48,10 +51,29 @@ export const inject = ['slots', 'locale']
  * @param ctx - client root context.
  */
 export function apply(ctx: ClientContext): void {
-  ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'ui-progress: dictionaries')
+  // Graceful compatibility: if the running DSH lacks the client APIs this
+  // plugin needs (e.g. an older DSH without ctx.slots.inject), render a
+  // remediation banner instead of throwing.
+  applyWithCompat(
+    '@dsh-external/dsh-ui-progress',
+    '当前 DSH 客户端 API 与插件不匹配',
+    [
+      '将 DSH 升级到已适配的版本（dsh-v0.1.2-alpha.1，源码构建安装）。',
+      '或将插件更新到适配当前 DSH 的版本（仓库最新 tag）。',
+      '如仍显示，请在插件目录执行 pnpm run build 后刷新页面。',
+    ],
+    [
+      ['slots.inject', ctx?.slots?.inject],
+      ['slots.register', ctx?.slots?.register],
+      ['locale.register', ctx?.locale?.register],
+    ],
+    () => {
+      ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'ui-progress: dictionaries')
 
-  ctx.slots.inject('conversation.input.dock', () => ctx.slots.register(
-    { name: 'conversation.input.dock', id: 'progress', order: 20, locale: NS },
-    SessionProgressBar,
-  ))
+      ctx.slots.inject('conversation.input.dock', () => ctx.slots.register(
+        { name: 'conversation.input.dock', id: 'progress', order: 20, locale: NS },
+        SessionProgressBar,
+      ))
+    },
+  )
 }

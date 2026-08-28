@@ -26,6 +26,9 @@ importers:
       '@deepseek-ai/dsh-client-ui-primitives':
         specifier: link:../.dsh/source/current/packages/client/ui-primitives
         version: link:../.dsh/source/current/packages/client/ui-primitives
+      '@deepseek-ai/dsh-client-ui-renderer':
+        specifier: link:../.dsh/source/current/packages/client/ui-renderer
+        version: link:../.dsh/source/current/packages/client/ui-renderer
       '@deepseek-ai/dsh-client-ui-session':
         specifier: link:../.dsh/source/current/packages/client/ui-session
         version: link:../.dsh/source/current/packages/client/ui-session

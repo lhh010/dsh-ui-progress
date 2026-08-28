@@ -7,7 +7,10 @@
  * the component feeds these slices from `useConversation` (Chat view
  * snapshot) and the dock owner's Session snapshot.
  */
-import type { ChatSnapshot, TodoItem } from '@deepseek-ai/dsh-client-ui-chat/client'
+import type { ChatSnapshot } from '@deepseek-ai/dsh-client-ui-chat/client'
+// Type-only: pulls the Chat Conversation view into the views map.
+import type {} from '@deepseek-ai/dsh-client-ui-chat/client'
+import type { TodoItem } from '@deepseek-ai/dsh-client-ui-conversation/client'
 import { etaOf, parseArgs } from './args.ts'
 
 /** The Chat view's legacy compatibility projection — the strip's node/timing data slice. */

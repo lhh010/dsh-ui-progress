@@ -110,12 +110,18 @@ function barElement(overrides: BarOverrides = {}): ReactElement {
   return (
     <SessionProgressBar
       session={sessionOf(overrides)}
+      input={{ draft: '', draftRev: 0, phase: 'plain' } as never}
+      inputActions={{ } as never}
       sessionId={SID}
       t={makeT()}
       useConversation={((selector: (s: ConversationSnapshot) => unknown) => selector(conversation)) as never as SessionProgressBarProps['useConversation']}
       useProjection={((key: 'todos') => undefined) as unknown as SessionProgressBarProps['useProjection']}
       useSessions={((selector: (s: SessionListState) => unknown) => selector(emptyList)) as never as SessionProgressBarProps['useSessions']}
       useSessionPendingInteraction={((selector: (s: ReadonlyMap<SessionId, SessionPendingInteraction>) => unknown) => selector(overrides.pending ?? new Map())) as never as SessionProgressBarProps['useSessionPendingInteraction']}
+      useSession={() => undefined as never}
+      useInput={() => undefined as never}
+      useChat={() => undefined as never}
+      useWorkspaces={() => [] as never}
     />
   )
 }
