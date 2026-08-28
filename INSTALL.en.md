@@ -8,6 +8,37 @@
 
 Prerequisites: **a built DSH snapshot** (`~/.dsh/source/current` pointing at a snapshot containing `lib/` artifacts — the `link:` dev dependencies of `cordis` and the various `@deepseek-ai/dsh-client-*` packages resolve from that snapshot) + `dsh web` running. This plugin is a **pure browser-half plugin** (the host half is empty; since v0.8.0 it no longer bundles a `report_progress` tool or reporting guidance; browser half: progress presentation). Installing = ① the package is resolvable by the configuration tree + ② one line added to the configuration.
 
+## Current default install (dsh-v0.1.2-alpha.1, v0.9.4)
+
+**Latest default install**: `v0.9.4` targets `dsh-v0.1.2-alpha.1` (GitHub tag, source-built install, not published to npm; it is also the latest version after `0.1.1-rc.1`).
+
+```sh
+# 1. Clone the repository; build artifacts are already in-tree (no build needed)
+git clone https://github.com/omdsh-dev/dsh-ui-progress.git
+cd dsh-ui-progress && pnpm install
+
+# 2. Install into the web profile
+dsh plugin --profile web add link:/path/to/dsh-ui-progress
+#   or a pinned-tag git dependency:
+#   dsh plugin --profile web add '@dsh-external/dsh-ui-progress@github:omdsh-dev/dsh-ui-progress#v0.9.4'
+```
+
+> Config line (`$DSH_HOME/profiles/web/cordis.patch.yml`, hot-reloaded, no restart needed):
+> ```yaml
+> - insert:
+>     - id: dsh-ui-progress
+>       name: '@dsh-external/dsh-ui-progress'
+> ```
+
+## Migration guide (DSH 0.1.1-rc.1 → 0.1.2-alpha.1)
+
+0.1.2-alpha.1 is an author-facing alpha (not published to npm) with breaking Client API rework; the official `ChatSnapshot.legacy` compatibility projection keeps the old fields, and this plugin v0.9.4 has completed the migration:
+
+- **The `@deepseek-ai/dsh-client-runtime` package was removed**: `ClientContext` now imports from `@deepseek-ai/cordis` (`import type { Context as ClientContext }`).
+- **`ConversationSnapshot` was refactored into a views architecture**: the old `nodes`/`turnTimings`/`turnEnds`/`partial`/`runningCalls` all moved to the `ChatSnapshot.legacy` compatibility projection; the turn timeline is on `ChatSnapshot.timeline`. Session lifecycle fields (`running`/`lastAgentError` etc.) remain on the new `SessionSnapshot` (`@deepseek-ai/dsh-api-session-controller/client`).
+- **Component props**: `PropsRuntime` is read through the `useSession` (Session lifecycle) + `useConversation` (ConversationSnapshot) double seats; cross-package slot registration now uses `ctx.slots.inject(name, () => ctx.slots.register(...))`.
+- **Plugin-author migration steps**: ① replace `ClientContext`/type import paths; ② read streaming/tool/node state via `useConversation → views.get('chat')?.legacy`; ③ read session lifecycle via `useSession`; ④ register via `ctx.slots.inject`; ⑤ update `package.json` `dsh.client.inject` (drop `dsh-client-runtime`) and the `devDependencies` link.
+
 ## snapshot0810 (v0.9.1) — profile installation
 
 ```sh
