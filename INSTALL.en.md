@@ -2,7 +2,9 @@
 
 [简体中文](./INSTALL.md) | **English**
 
-> **Version selection**: `v0.9.1` (default) targets DSH snapshot snapshot0810 (`snapshots/20260810T155924Z`) and is also compatible with snapshot0811 (`snapshots/20260811T152241Z`) and the final snapshot snapshot0812 (`snapshots/20260812T172954Z-final`); `v0.9.0` targets snapshot0809 (`snapshots/20260809T140917Z`); `v0.8.0` targets snapshot0808 (`snapshots/20260808T121140Z`); `v0.6.0` targets snapshot0807 (`snapshots/20260807T130646Z`); `v0.1.0` targets snapshot0805 (`snapshots/20260805T134133Z`) and is installed via the legacy method. See [README.md](README.md#版本对应--version-compatibility) for the version mapping.
+> **Current default**: `v0.9.5` (targeting `dsh-v0.1.2-alpha.1`, source-built install) — install the latest tag directly; below is the historical snapshot compat record.
+
+> **Version selection**:  `v0.9.1` (default) targets DSH snapshot snapshot0810 (`snapshots/20260810T155924Z`) and is also compatible with snapshot0811 (`snapshots/20260811T152241Z`) and the final snapshot snapshot0812 (`snapshots/20260812T172954Z-final`); `v0.9.0` targets snapshot0809 (`snapshots/20260809T140917Z`); `v0.8.0` targets snapshot0808 (`snapshots/20260808T121140Z`); `v0.6.0` targets snapshot0807 (`snapshots/20260807T130646Z`); `v0.1.0` targets snapshot0805 (`snapshots/20260805T134133Z`) and is installed via the legacy method. See [README.md](README.md#版本对应--version-compatibility) for the version mapping.
 
 > **npm release**: `v0.9.1` is compatible with the DSH npm releases `@deepseek-ai/dsh@0.0.1-rc.5` (dist-tag `next`, i.e. the npm release of the final snapshot snapshot0812) and `@deepseek-ai/dsh@0.0.1-rc.2` (the npm release of snapshot0811); runtime/type/startup manifest verified on a real instance. Starting from 0811 the vendored cordis was renamed to `@deepseek-ai/cordis` — this plugin has migrated its type imports and peer to `@deepseek-ai/cordis` (`^4.0.1-rc.1`, which is `4.0.1-rc.4` on the npm rc.5 baseline), and a plain `npm install` no longer fails with ERESOLVE. Handled automatically by `dsh plugin`/pnpm installation.
 
