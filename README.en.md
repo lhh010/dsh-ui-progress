@@ -4,6 +4,41 @@
 
 DSH Web UI session progress plugin: provides a persistent session progress bar in the input dock area of the DeepSeek Harness Web GUI, with **zero core changes** (a pure client plugin that never touches agent-loop).
 
+## Install
+
+```sh
+# Option 1: pinned-tag git dependency (public mirror, recommended; github:omdsh-dev/dsh-ui-progress also works)
+dsh plugin --profile web add '@dsh-external/dsh-ui-progress@github:lhh010/dsh-ui-progress#v0.9.5'
+
+# Option 2: local link (development)
+git clone https://github.com/lhh010/dsh-ui-progress.git
+cd dsh-ui-progress && pnpm install && pnpm run build
+dsh plugin --profile web add link:/path/to/dsh-ui-progress
+```
+
+Config line (`$DSH_HOME/profiles/web/cordis.patch.yml`, hot-reloaded, no restart needed):
+
+```yaml
+- insert:
+    - id: dsh-ui-progress
+      name: '@dsh-external/dsh-ui-progress'
+```
+
+> **Install tips**: pnpm 11 may block node-pty build scripts on first install — run `pnpm approve-builds --all` under `~/.dsh/profiles/web` and re-run the install; then **hard-refresh the browser** (Ctrl/Cmd+Shift+R).
+
+### Prompt install (let DSH install it)
+
+Paste this prompt into any DSH session and the agent installs it for you:
+
+> Install the dsh-ui-progress plugin (DSH session progress strip: input-dock progress bar / todos real progress / interruption tint), steps:
+> 1. Run `dsh plugin --profile web add '@dsh-external/dsh-ui-progress@github:lhh010/dsh-ui-progress#v0.9.5'` (the first run may fail because pnpm 11 blocks node-pty build scripts)
+> 2. Under `~/.dsh/profiles/web`, run `pnpm approve-builds --all` (approve the build scripts)
+> 3. Re-run the install command from step 1
+> 4. Remind me to hard-refresh the browser (Ctrl/Cmd+Shift+R)
+> On errors, first check the FAQ/known limitations in the README at https://github.com/lhh010/dsh-ui-progress.
+
+## Version compatibility
+
 ## 版本对应 / Version compatibility
 
 Build artifacts track DSH snapshot versions; pick the matching version for your snapshot when installing:
