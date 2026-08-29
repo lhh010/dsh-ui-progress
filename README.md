@@ -30,7 +30,7 @@ DSH Web UI 会话进度插件：为 DeepSeek Harness 的 Web GUI 的输入框停
 > **alpha 发版兼容**：兼容 `dsh-v0.1.2-alpha.1`（GitHub tag `dsh-v0.1.2-alpha.1`，源码构建安装，不发布 npm；v0.9.4 迁移并验证：0.1.2-alpha.1 移除了 `@deepseek-ai/dsh-client-runtime` 客户端包，`ClientContext` 改从 `@deepseek-ai/cordis` 导入、`ConversationSnapshot` 重构为 views 架构（旧 `nodes`/`turnTimings`/`turnEnds`/`partial`/`runningCalls` 全部移到 `ChatSnapshot.legacy` 兼容投影，turn 时间线在 `ChatSnapshot.timeline`）。本插件已在 0.1.2-alpha.1 源码基线上重写状态推导（session-state.ts 改为读取 Chat legacy 切片 + 新 SessionSnapshot 的 `lastAgentError`），typecheck、39 个单测与构建全绿，注册改用 `ctx.slots.inject('conversation.input.dock', …)` 新范式）。
 本插件 v0.9.5 起内置**兼容性自诊断**：apply 时探测所需客户端 API,不满足时不再崩溃,而是在页面右下角渲染修复指引横幅(点击可关闭),提示升级 DSH 或更新插件。
 
-> git 依赖方式固定 tag：`pnpm add '@dsh-external/dsh-ui-progress@github:dsh-external/dsh-ui-progress#v0.9.1'`（0809 用户用 `#v0.9.0`，0808 用户用 `#v0.8.0`，0807 用户用 `#v0.6.0`，0805 用户用 `#v0.1.0`）。
+> git 依赖方式固定 tag（公开镜像，推荐）：`pnpm add '@dsh-external/dsh-ui-progress@github:lhh010/dsh-ui-progress#v0.9.5'`（或 `github:omdsh-dev/dsh-ui-progress`；历史版本：0809 用户用 `#v0.9.0`，0808 用户用 `#v0.8.0`，0807 用户用 `#v0.6.0`，0805 用户用 `#v0.1.0`）。
 
 ## 0809 兼容要点（snapshot0809，实机验证）
 
