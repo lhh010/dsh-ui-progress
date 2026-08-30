@@ -1,0 +1,13 @@
+$ vitest run
+
+ RUN  v4.1.10 E:/deepseek-harness/dsh-ui-progress
+
+ ✓ tests/token-rate.spec.ts (21 tests) 9ms
+ ✓ tests/session-state.spec.ts (12 tests) 7ms
+ ✓ tests/session-progress-bar.spec.tsx (6 tests) 88ms
+
+ Test Files  3 passed (3)
+      Tests  39 passed (39)
+   Start at  11:00:38
+   Duration  3.37s (transform 470ms, setup 0ms, import 1.37s, tests 105ms, environment 1.66s)
+

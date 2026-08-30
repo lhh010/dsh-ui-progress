@@ -1,0 +1,14 @@
+✓ Lockfile passes supply-chain policies (verified 1d ago)
+Progress: resolved 1, reused 0, downloaded 0, added 0
+[WARN] 1 deprecated subdependencies found: whatwg-encoding@3.1.1
+Packages: +5 -3
++++++---
+Progress: resolved 178, reused 132, downloaded 0, added 0
+Progress: resolved 178, reused 132, downloaded 0, added 5, done
+
+devDependencies:
++ @deepseek-ai/dsh-home-paths 0.1.2-alpha.1 <- ..\.dsh\source\current\packages\util\home-paths
++ @deepseek-ai/dsh-host-webserver 0.1.2-alpha.1 <- ..\.dsh\source\current\packages\host\webserver
++ @types/node 22.20.1 (26.4.0 is available)
+
+Done in 2.1s using pnpm v11.18.0

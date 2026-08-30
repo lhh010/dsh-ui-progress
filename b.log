@@ -1,0 +1,27 @@
+$ tsdown
+ℹ  tsdown v0.22.14 powered by rolldown v1.2.2
+ℹ  config file: E:\deepseek-harness\dsh-ui-progress\tsdown.config.ts 
+ℹ  entry: src/index.ts, src/invariant.ts
+ℹ  target: es2024
+ℹ  tsconfig: tsconfig.json
+ℹ  entry: src/client/index.ts
+ℹ  tsconfig: tsconfig.json
+
+ WARN  `external` is deprecated. Use `deps.neverBundle` instead.
+
+
+ WARN  `noExternal` is deprecated. Use `deps.alwaysBundle` instead.
+
+ℹ  Build start
+ℹ  Cleaning 4 files
+ℹ  [ESM] lib\index.js      7.26 kB │ gzip: 2.88 kB
+ℹ  [ESM] lib\invariant.js  0.76 kB │ gzip: 0.43 kB
+ℹ  [ESM] 2 files, total: 8.02 kB
+✔  Build complete in 66ms
+ℹ  Hint: consider adding deps.onlyBundle option to avoid unintended bundling of dependencies, or set deps.onlyBundle: false to disable this hint.
+See more at https://tsdown.dev/options/dependencies#deps-onlybundle
+Detected dependencies in bundle:
+- clsx
+ℹ  [CJS] lib\client.js  51.95 kB │ gzip: 16.65 kB
+ℹ  [CJS] 1 files, total: 51.95 kB
+✔  Build complete in 80ms

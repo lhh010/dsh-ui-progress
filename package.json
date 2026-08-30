@@ -1,6 +1,6 @@
 {
   "name": "@dsh-external/dsh-ui-progress",
-  "version": "0.9.5",
+  "version": "0.9.6",
   "private": true,
   "type": "module",
   "description": "DSH Web UI 会话进度插件：输入框停靠区常驻会话进度条（todos 真实进度 / 无投影默认 100% / 中断橘红态 / 实时 token 生成速率），零核心改动。",
@@ -54,6 +54,9 @@
     "@deepseek-ai/dsh-client-ui-session": "link:../.dsh/source/current/packages/client/ui-session",
     "@deepseek-ai/dsh-client-ui-slots": "link:../.dsh/source/current/packages/client/ui-slots",
     "@deepseek-ai/dsh-invariants": "link:../.dsh/source/current/packages/runtime-diagnostics/invariants",
+    "@deepseek-ai/dsh-home-paths": "link:../.dsh/source/current/packages/util/home-paths",
+    "@deepseek-ai/dsh-host-webserver": "link:../.dsh/source/current/packages/host/webserver",
+    "@types/node": "^22.10.2",
     "@deepseek-ai/dsh-session": "link:../.dsh/source/current/packages/core/session",
     "@deepseek-ai/dsh-tool-todo": "link:../.dsh/source/current/packages/todo/tool-todo",
     "@testing-library/react": "^16.1.0",
