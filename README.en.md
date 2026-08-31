@@ -4,6 +4,9 @@
 
 DSH Web UI session progress plugin: provides a persistent session progress bar in the input dock area of the DeepSeek Harness Web GUI, with **zero core changes** (a pure client plugin that never touches agent-loop).
 
+> **Pick the plugin version that matches your DSH** (a mismatch crashes: common symptom `useConversation is not a function`)
+> - DSH **0.1.1-rc.2** (npm latest): install the **old** version `'@dsh-external/dsh-ui-progress@github:lhh010/dsh-ui-progress#v0.9.3'`
+> - DSH **0.1.2-alpha.1 / alpha.2**: install the **new** version (the default command below)
 ## Install
 
 ```sh

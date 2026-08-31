@@ -2,6 +2,9 @@
 
 DSH Web UI 会话进度插件：为 DeepSeek Harness 的 Web GUI 的输入框停靠区提供常驻会话进度条，**零核心改动**（纯 client 插件，不触碰 agent-loop）。
 
+> **你的 DSH 版本决定装哪个插件版本**（装错会崩：常见症状 `useConversation is not a function`）
+> - DSH **0.1.1-rc.2**（npm 最新）：装**旧版** `'@dsh-external/dsh-ui-progress@github:lhh010/dsh-ui-progress#v0.9.3'`
+> - DSH **0.1.2-alpha.1 / alpha.2**：装**新版**（下方默认命令）
 ## 安装
 
 ```sh
