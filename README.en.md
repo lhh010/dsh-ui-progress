@@ -8,7 +8,7 @@ DSH Web UI session progress plugin: provides a persistent session progress bar i
 
 ```sh
 # Option 1: pinned-tag git dependency (public mirror, recommended; github:lhh010/dsh-ui-progress also works)
-dsh plugin --profile web add '@dsh-external/dsh-ui-progress@github:lhh010/dsh-ui-progress#v0.9.5'
+dsh plugin --profile web add '@dsh-external/dsh-ui-progress@github:lhh010/dsh-ui-progress#v0.9.7'
 
 # Option 2: local link (development)
 git clone https://github.com/lhh010/dsh-ui-progress.git
@@ -31,7 +31,7 @@ Config line (`$DSH_HOME/profiles/web/cordis.patch.yml`, hot-reloaded, no restart
 Paste this prompt into any DSH session and the agent installs it for you:
 
 > Install the dsh-ui-progress plugin (DSH session progress strip: input-dock progress bar / todos real progress / interruption tint), steps:
-> 1. Run `dsh plugin --profile web add '@dsh-external/dsh-ui-progress@github:lhh010/dsh-ui-progress#v0.9.5'` (the first run may fail because pnpm 11 blocks node-pty build scripts)
+> 1. Run `dsh plugin --profile web add '@dsh-external/dsh-ui-progress@github:lhh010/dsh-ui-progress#v0.9.7'` (the first run may fail because pnpm 11 blocks node-pty build scripts)
 > 2. Under `~/.dsh/profiles/web`, run `pnpm approve-builds --all` (approve the build scripts)
 > 3. Re-run the install command from step 1
 > 4. Remind me to hard-refresh the browser (Ctrl/Cmd+Shift+R)
@@ -56,17 +56,17 @@ Build artifacts track DSH snapshot versions; pick the matching version for your 
 | `v0.7.0` | `snapshots/20260808T121140Z` (snapshot0808) | New build: adapted to the 0808 slot migration (`conversation.chat.toolview` → `tool.call.toolview`; registration waits for the declaration via `slots.inject`) |
 | `v0.8.0` | `snapshots/20260808T121140Z` (snapshot0808) | New build: removed the bundled `report_progress` tool and reporting guidance (host half emptied), removed the tool card; fill changed to the real todos ratio (defaults to 100% without todos); added the interrupted orange-red state (manual stop / API errors and other unexpected stops) |
 | `v0.9.0` | `snapshots/20260809T140917Z` (snapshot0809) | New build (native 0809): added **real-time token generation rate** while running (self-calibrating estimate + 1s sliding-window smoothing, counted from first token arrival, close to real provider usage) |
-| `v0.9.5` (default) | `dsh-v0.1.2-alpha.1` | Current: migrated to the 0.1.2-alpha.1 client API (Chat legacy projection + ctx.slots.inject), with the compat self-diagnostic banner |
+| `v0.9.7` (default) | `dsh-v0.1.2-alpha.1` | Current: migrated to the 0.1.2-alpha.1 client API (Chat legacy projection + ctx.slots.inject), with the compat self-diagnostic banner |
 | `v0.9.3` | npm `@deepseek-ai/dsh@0.1.1-rc.1` | Fixed interruption tint on 0.1.1-rc.1
 | `v0.9.1` (default) | `snapshots/20260810T155924Z` (snapshot0810) | Compatibility build:
 
-> **Compatibility notes**: the current version is `v0.9.5` (targeting `dsh-v0.1.2-alpha.1`); the following is the historical snapshot compat record. the `v0.8.0` build was developed against snapshot0808 and is also compatible with snapshot0809 (`snapshots/20260809T140917Z`), verified on a real instance; `v0.9.0` is a native snapshot0809 build; `v0.9.1` targets snapshot0810 (`snapshots/20260810T155924Z`, the default version) and is also compatible with snapshot0811 (`snapshots/20260811T152241Z`) and the final snapshot snapshot0812 (`snapshots/20260812T172954Z-final`) — 0811 and 0812 passed real-instance boot verification (see below).
+> **Compatibility notes**: the current version is `v0.9.7` (targeting `dsh-v0.1.2-alpha.1`); the following is the historical snapshot compat record. the `v0.8.0` build was developed against snapshot0808 and is also compatible with snapshot0809 (`snapshots/20260809T140917Z`), verified on a real instance; `v0.9.0` is a native snapshot0809 build; `v0.9.1` targets snapshot0810 (`snapshots/20260810T155924Z`, the default version) and is also compatible with snapshot0811 (`snapshots/20260811T152241Z`) and the final snapshot snapshot0812 (`snapshots/20260812T172954Z-final`) — 0811 and 0812 passed real-instance boot verification (see below).
 
 > **alpha release compatibility**: compatible with `dsh-v0.1.2-alpha.1` (GitHub tag `dsh-v0.1.2-alpha.1`, source-built install, not published to npm; v0.9.4 migrated & verified: 0.1.2-alpha.1 removed the `@deepseek-ai/dsh-client-runtime` client package — `ClientContext` now imports from `@deepseek-ai/cordis`, and `ConversationSnapshot` was refactored into a views architecture (the old `nodes`/`turnTimings`/`turnEnds`/`partial`/`runningCalls` all moved to the `ChatSnapshot.legacy` compatibility projection; the turn timeline is on `ChatSnapshot.timeline`). This plugin rewrote its state derivation on the 0.1.2-alpha.1 source baseline (session-state.ts now reads the Chat legacy slice plus the new SessionSnapshot `lastAgentError`), with typecheck, all 39 unit tests, and the build green; registration uses the new `ctx.slots.inject('conversation.input.dock', …)` form).
 
 > **npm release compatibility**: compatible with the DSH npm release `@deepseek-ai/dsh@0.0.1-rc.5` (dist-tag `next`, i.e. the npm release of the final snapshot snapshot0812; `npm exec -p @deepseek-ai/dsh@0.0.1-rc.5 -- dsh --profile web --port <port>` can access the specified version and start it, lib production mode), while remaining compatible with `@deepseek-ai/dsh@0.0.1-rc.2` (the npm release of snapshot0811). Verified on a real instance (npm rc.5 baseline): after `dsh web` starts, the `window.__DSH_BOOT__` manifest includes `@dsh-external/dsh-ui-progress` (inject: `dsh-client-locale`/`dsh-client-runtime`/`dsh-client-ui-conversation`), and `/plugins/@dsh-external/dsh-ui-progress/client.js` returns 200; the source typechecks fully green against the rc.5 baseline build artifacts (this plugin has migrated its cordis type imports and peer to `@deepseek-ai/cordis`, see below). Note: starting from 0811 the vendored cordis was renamed to `@deepseek-ai/cordis` (the npm release no longer publishes a vendored package under the name `cordis`); this plugin has migrated (peer declares `@deepseek-ai/cordis: ^4.0.1-rc.1`, which is `4.0.1-rc.4` on the npm rc.5 baseline), and a plain `npm install` no longer fails with ERESOLVE.
 
-> Pinned tag via git dependency (public mirror, recommended): `pnpm add '@dsh-external/dsh-ui-progress@github:lhh010/dsh-ui-progress#v0.9.5'` (or `github:lhh010/dsh-ui-progress`; historical: 0809 users `#v0.9.0`, 0808 users `#v0.8.0`, 0807 users `#v0.6.0`, 0805 users `#v0.1.0`).
+> Pinned tag via git dependency (public mirror, recommended): `pnpm add '@dsh-external/dsh-ui-progress@github:lhh010/dsh-ui-progress#v0.9.7'` (or `github:lhh010/dsh-ui-progress`; historical: 0809 users `#v0.9.0`, 0808 users `#v0.8.0`, 0807 users `#v0.6.0`, 0805 users `#v0.1.0`).
 
 ## 0809 compatibility notes (snapshot0809, verified on a real instance)
 
