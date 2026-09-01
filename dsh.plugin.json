@@ -1,6 +1,6 @@
 {
   "id": "@dsh-external/dsh-ui-progress",
-  "version": "0.9.0",
+  "version": "0.9.8",
   "main": "./lib/index.js",
   "description": "DSH Web UI 会话进度插件：输入框停靠区常驻会话进度条，运行中加载圈旋转，中断（手动/意外）橘红态，实时 token 生成速率",
   "engines": {
