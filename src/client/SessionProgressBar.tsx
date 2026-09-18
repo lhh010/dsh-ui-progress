@@ -83,6 +83,12 @@ const EMPTY_LEGACY: ChatLegacy = {
   runningCalls: [],
 }
 
+/** Fallback when the host no longer provides the global session-list seat
+ *  (dsh 0.1.6-alpha.2 removed it from the dock standard kit): subagent
+ *  pending/running detection degrades to hidden instead of crashing. */
+const EMPTY_BY_ID: Record<SessionId, SessionSummary> = {}
+const EMPTY_INTERACTIONS: ReadonlyMap<SessionId, SessionPendingInteraction> = new Map()
+
 /** Pending human interactions of this session's subagent subtree, by kind. */
 export interface SubagentPending {
   approvals: number
@@ -234,9 +240,12 @@ export function SessionProgressBar({
   const completed = !running && turn > 0
   // Attention state: this session's own pending waits plus the subagent
   // subtree's (the sidebar hides subagent rows — this strip surfaces them).
-  const pendingBySession = useSessionPendingInteraction(interactions => interactions)
+  // dsh 0.1.6-alpha.2 removed both global seats from the dock standard kit
+  // (multi-instance refactor): degrade to no pending/subagent detection.
+  const pendingBySession = useSessionPendingInteraction?.(interactions => interactions) ?? EMPTY_INTERACTIONS
   const ownPending = pendingKindOf(pendingBySession.get(sessionId)?.kind)
-  const subPending = subagentPendingState(useSessions(s => s.byId), pendingBySession, sessionId)
+  const sessionsById = useSessions?.(s => s.byId) ?? EMPTY_BY_ID
+  const subPending = subagentPendingState(sessionsById, pendingBySession, sessionId)
   const pending = ownPending !== null || subPending.approvals + subPending.questions + subPending.plans > 0
   // Interrupted state: the latest completed turn was stopped (manual stop,
   // API failure, or another unexpected break) — orange-red, outranks the
@@ -245,7 +254,7 @@ export function SessionProgressBar({
   // Background state: this main conversation is idle while descendant
   // subagent sessions keep executing — the strip must not read 会话就绪
   // (the green done rest) while background work is still running.
-  const subRunning = subagentRunningCount(useSessions(s => s.byId) as unknown as Record<string, { running?: boolean; parentId?: string; origin?: string }>, sessionId)
+  const subRunning = subagentRunningCount(sessionsById as unknown as Record<string, { running?: boolean; parentId?: string; origin?: string }>, sessionId)
   const background = !running && subRunning > 0
   // Session-wide token usage behind a hover/click panel: the chip shows
   // the running total, the panel breaks it down uncached/cache-read/write
