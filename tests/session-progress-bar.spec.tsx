@@ -35,6 +35,15 @@ vi.mock('@deepseek-ai/dsh-client-ui-primitives', () => ({
   IconLoadingOutline16: () => null,
   IconSparkle16: () => null,
   IconWarningOutline16: () => null,
+  IconDatabaseOutline16: () => null,
+  IconLoadingOutlineMedium: () => null,
+  IconSparkleMedium: () => null,
+  IconWarningOutlineMedium: () => null,
+  IconDatabaseOutlineMedium: () => null,
+  IconLoadingOutlineRegular: () => null,
+  IconSparkleRegular: () => null,
+  IconWarningOutlineRegular: () => null,
+  IconDatabaseOutlineRegular: () => null,
 }))
 
 afterEach(cleanup)

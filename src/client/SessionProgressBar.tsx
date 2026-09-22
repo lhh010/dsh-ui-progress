@@ -50,7 +50,7 @@
  * anchor the core uses for its settled tokens/s, the live number is directly
  * comparable to the post-turn value on the conversation StatsLine.
  */
-import { IconDatabaseOutline16, IconLoadingOutline16, IconSparkle16, IconWarningOutline16 } from '@deepseek-ai/dsh-client-ui-primitives'
+import * as dshPrimitives from '@deepseek-ai/dsh-client-ui-primitives'
 import type { SessionSummary } from '@deepseek-ai/dsh-api-session-controller/client'
 // Type-only: merges the tokenUsage key into SessionProjectionMap for useProjection.
 import type { TokenUsageProjection } from '@deepseek-ai/dsh-token-meter/client'
@@ -58,6 +58,21 @@ import type { SessionPendingInteraction } from '@deepseek-ai/dsh-client-ui-sessi
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
 import clsx from 'clsx'
+import type { ComponentType } from 'react'
+// Icon renames across hosts: 0.1.5/0.1.6 ship *Outline16; 0.1.7+ ships
+// *OutlineMedium/Regular. Resolve at runtime so one build serves both.
+const pickIcon = (...names: string[]): ComponentType<{ size?: number }> => {
+  const mod = dshPrimitives as Record<string, unknown>
+  for (const n of names) {
+    const v = mod[n]
+    if (typeof v === 'function' || (v && typeof v === 'object')) return v as ComponentType<{ size?: number }>
+  }
+  throw new Error(`dsh-ui-progress: no icon among [${names.join(', ')}] in @deepseek-ai/dsh-client-ui-primitives`)
+}
+const IconLoading = pickIcon('IconLoadingOutline16', 'IconLoadingOutlineMedium', 'IconLoadingOutlineRegular')
+const IconWarning = pickIcon('IconWarningOutline16', 'IconWarningOutlineMedium', 'IconWarningOutlineRegular')
+const IconSparkle = pickIcon('IconSparkle16', 'IconSparkleMedium', 'IconSparkleRegular')
+const IconDatabase = pickIcon('IconDatabaseOutline16', 'IconDatabaseOutlineMedium', 'IconDatabaseOutlineRegular')
 import { useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import css from './SessionProgressBar.module.css'
@@ -296,7 +311,7 @@ export function SessionProgressBar({
         data-state={pending ? 'pending' : running ? 'running' : interrupted ? 'interrupted' : background ? 'background' : completed ? 'done' : 'idle'}
       >
         <span className={clsx(css.glyph, (running || background) && css.glyphRunning)}>
-          {running || background ? <IconLoadingOutline16 size={14} /> : interrupted ? <IconWarningOutline16 size={14} /> : <IconSparkle16 size={14} />}
+          {running || background ? <IconLoading size={14} /> : interrupted ? <IconWarning size={14} /> : <IconSparkle size={14} />}
         </span>
         <span className={css.label}>
           {pending ? pendingLabel(ownPending, subPending, t) : interrupted ? t('bar.interrupted') : background ? t('bar.background', { count: subRunning }) : stateLabel(running, toolName, thinking, counts, t)}
@@ -326,7 +341,7 @@ export function SessionProgressBar({
             onMouseEnter={() => { setTokenHover(true) }}
             onMouseLeave={() => { scheduleTokenHide() }}
           >
-            <IconDatabaseOutline16 size={12} />
+            <IconDatabase size={12} />
             {formatTokenCount(tokenTotals.total)}
           </button>
         )}
