@@ -69,7 +69,7 @@ dsh plugin --profile web add link:/path/to/dsh-ui-progress
 | `v0.9.10` | `dsh-v0.1.2-alpha.1`~`alpha.4` | 声明支持 alpha.4（typecheck/build 全绿） |
 | `v0.9.9` | `dsh-v0.1.2-alpha.1`~`alpha.3` | 更新提示词补「按 DSH 版本选 tag」路由说明与排查指引 |
 | `v0.9.8` | `dsh-v0.1.2-alpha.3`（npm alpha） | 兼容 DSH 0.1.2-alpha.3：typecheck/build/单测全绿 + 实机验证 |
-| `v0.9.3` | npm `@deepseek-ai/dsh@0.1.1-rc.1` | 修复中断检测：0.1.x 的停止不再留旧式节点痕迹，改用 `turn/end reason` 判定中断（见 changelog） |
+| `v0.9.3` | npm `@deepseek-ai/dsh@0.1.1-rc.1` | 修复中断检测：0.1.x 的停止不再留旧式节点痕迹，改以最新回合的 `turn/end reason` 为主信号（`aborted`/`interrupted` 区分手动停止与崩溃），窗口节点痕迹降级为旧宿主回退路径；新增 12 例单测，npm 0.1.1-rc.1 实机核验 |
 | `v0.9.2` | npm `@deepseek-ai/dsh@0.1.1-rc.1` | 0.1.1-rc.1 实机 boot 验证通过（boot 清单 + client.js 200），依赖的槽位/服务不变 |
 | `v0.9.1` | `snapshots/20260810T155924Z`（snapshot0810） | 兼容性构建：客户端插件元数据从顶层 `dshClient` 迁移为嵌套 `dsh.client`（0810 的 ClientModuleHostService 只读该字段；顶层 `dshClient` 被静默忽略），inject/platform 原样保留 |
 | `v0.9.0` | `snapshots/20260809T140917Z`（snapshot0809） | 新构建（原生 0809）：运行中新增**实时 token 生成速率**（自校准估算 + 1s 滑动窗口平滑，首 token 到达起算，贴近真实 provider usage） |
@@ -144,14 +144,6 @@ v0.8.0 起本插件**不再注入任何模型可见输入**：`report_progress` 
     - id: dsh-ui-progress
       name: '@dsh-external/dsh-ui-progress'
 ```
-
-## 更新记录 / Changelog
-
-### 2026-08-20 · v0.9.3 — 修复中断橘红态在 DSH 0.1.1-rc.1 上失效
-
-- **修复**：0.1.x 的 agent-loop 不再为「手动停止」产生旧式节点痕迹——`agent/error` 只在非取消错误时上报（`lastAgentError` 不再填充）、`turn/error` 事件已取消（`turn-error` 节点只在 `turn/end reason: error` 时生成）、工具截断的错误码由 `interrupted` 改为 `ABORTED_BEFORE_DISPATCH`/`TOOL_OUTCOME_UNKNOWN`/`TOOL_NOT_STARTED`（调度器路径的 code 还嵌在 `error.info.code`）。因此无 partial 内容的停止不再触发橘红态
-- **迁移**：中断判定改以 `snapshot.chat.timeline` 中最新回合的 `turn/end reason` 为主信号（`aborted` = 手动停止/取消，`interrupted` = 崩溃修复；0.1.x 起每次停止都会留下 `turn/end` 事件），窗口节点痕迹降级为兼容旧宿主与 error 回合的回退路径，并扩充工具错误码集合（含嵌套 `info.code` 与三个新码，保留旧 `interrupted`）
-- **验证**：新增 12 例单测（reason 主信号 4 例 + 节点回退 8 例），39 例全部通过；typecheck、build 通过；DSH npm `0.1.1-rc.1` 实机核验
 
 ## Export shape
 
