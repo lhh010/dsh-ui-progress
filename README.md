@@ -9,7 +9,7 @@ DSH Web UI 会话进度插件：为 DeepSeek Harness 的 Web GUI 的输入框停
 
 ```sh
 # 方式一：git 依赖固定 tag（公开镜像，推荐；也可用 github:lhh010/dsh-ui-progress）
-dsh plugin --profile web add '@dsh-external/dsh-ui-progress@github:lhh010/dsh-ui-progress#v0.10.3'
+dsh plugin --profile web add '@dsh-external/dsh-ui-progress@github:lhh010/dsh-ui-progress#v0.10.4'
 
 # 方式二：本地 link（开发）
 git clone https://github.com/lhh010/dsh-ui-progress.git
@@ -32,7 +32,7 @@ dsh plugin --profile web add link:/path/to/dsh-ui-progress
 把下面这段提示词发给任意一个 DSH 会话，模型会替你完成安装：
 
 > 帮我安装 dsh-ui-progress 插件（DSH 会话进度条：输入框常驻会话进度条/todos 真实进度/中断橘红态），步骤：
-> 1. 执行 `dsh plugin --profile web add '@dsh-external/dsh-ui-progress@github:lhh010/dsh-ui-progress#v0.10.3'`（首次可能被 pnpm 11 拦截 node-pty 构建脚本而失败）
+> 1. 执行 `dsh plugin --profile web add '@dsh-external/dsh-ui-progress@github:lhh010/dsh-ui-progress#v0.10.4'`（首次可能被 pnpm 11 拦截 node-pty 构建脚本而失败）
 > 2. 在 `~/.dsh/profiles/web` 下执行 `pnpm approve-builds --all`（放行构建脚本）
 > 3. 再执行一次第 1 步的安装命令
 > 4. 完成后提醒我硬刷新浏览器（Ctrl/Cmd+Shift+R）
@@ -56,7 +56,8 @@ dsh plugin --profile web add link:/path/to/dsh-ui-progress
 
 | 插件版本 | DSH 快照 | 说明 |
 | --- | --- | --- |
-| `v0.10.3`（默认） | `dsh-v0.1.2-alpha.1`~`alpha.5`、`rc.1`、`0.1.3-alpha.1`~`0.1.6-alpha.1`、`0.1.7-alpha.1` | **适配 dsh 0.1.7-alpha.1 图标集改名**：primitives 全部 `*16` 图标取消（→ `*Medium`/`*Regular` 双变体），静态解构得 `undefined` → React #130 → slot 错误边界卸载整个输入栏 dock（症状：进度条消失，控制台仅一条压缩报错）。改为运行时回退解析（`*16` → `*Medium` → `*Regular`），单构建兼容 0.1.5/0.1.6/0.1.7+ 宿主；typecheck/45 单测/构建全绿，无头浏览器 E2E 验证 dock 恢复渲染、零控制台报错 |
+| `v0.10.4`（默认） | `dsh-v0.1.2-alpha.1`~`alpha.5`、`rc.1`、`0.1.3-alpha.1`~`0.1.6-alpha.2`、`0.1.7-alpha.1`、`0.1.7-alpha.2` | **新增 DSH 版本门控更新提示**：浮标结合当前运行 DSH 版本（宿主端读取）与 compatibility.json 判定——最新版不支持当前 DSH 时改提示「需更高 DSH」（琥珀色）或中间版本（蓝+备注），数据缺失回退旧行为。声明支持 dsh-v0.1.7-alpha.2（实机验证）；typecheck/52 单测/构建全绿 |
+| `v0.10.3` | `dsh-v0.1.2-alpha.1`~`alpha.5`、`rc.1`、`0.1.3-alpha.1`~`0.1.6-alpha.1`、`0.1.7-alpha.1` | **适配 dsh 0.1.7-alpha.1 图标集改名**：primitives 全部 `*16` 图标取消（→ `*Medium`/`*Regular` 双变体），静态解构得 `undefined` → React #130 → slot 错误边界卸载整个输入栏 dock（症状：进度条消失，控制台仅一条压缩报错）。改为运行时回退解析（`*16` → `*Medium` → `*Regular`），单构建兼容 0.1.5/0.1.6/0.1.7+ 宿主；typecheck/45 单测/构建全绿，无头浏览器 E2E 验证 dock 恢复渲染、零控制台报错 |
 | `v0.10.2` | `dsh-v0.1.2-alpha.1`~`alpha.5`、`rc.1`、`0.1.3-alpha.1`~`0.1.6-alpha.2` | **适配 dsh 0.1.6-alpha.2 运行时解析重构**：dock 标准 props 移除 `useSessions`/`useSessionPendingInteraction`，子代理待办/运行指示降级隐藏，其余（todos 进度、token 速率/面板、ETA、状态文案）全功能；typecheck/45 单测/构建全绿，alpha.2 实机验证（进度条恢复显示）。v0.10.1 为纯版本号发布（声明支持 0.1.6-alpha.1），未单独建行 |
 | `v0.10.0` | `dsh-v0.1.2-alpha.1`~`alpha.5`、`rc.1`、`0.1.3-alpha.1`~`0.1.5-rc.2` | **新功能双发**：①「后台运行中」状态（青色）——主会话完成而子代理树仍在执行时，进度条不再误显就绪绿；②Token 用量徽标 + 悬停/点击明细面板（总量/未缓存输入/缓存读取/缓存写入/输出/缓存命中%，实时更新）。typecheck/45 单测/构建全绿，热挂载实机验证 |
 | `v0.9.17` | `dsh-v0.1.2-alpha.1`~`alpha.5`、`rc.1`、`0.1.3-alpha.1`~`0.1.5-rc.2` | 声明支持 0.1.5-rc.1~rc.2（npm 已发布，钉版本实机验证；rc.1 为 0.1.5 系列首个候选版本，client 插件面零代码差异；typecheck/build/39 单测全绿，热挂载实机验证） |
@@ -91,7 +92,7 @@ dsh plugin --profile web add link:/path/to/dsh-ui-progress
 > **alpha 发版兼容**：兼容 `dsh-v0.1.2-alpha.1`（GitHub tag `dsh-v0.1.2-alpha.1`，源码构建安装，不发布 npm；v0.9.4 迁移并验证：0.1.2-alpha.1 移除了 `@deepseek-ai/dsh-client-runtime` 客户端包，`ClientContext` 改从 `@deepseek-ai/cordis` 导入、`ConversationSnapshot` 重构为 views 架构（旧 `nodes`/`turnTimings`/`turnEnds`/`partial`/`runningCalls` 全部移到 `ChatSnapshot.legacy` 兼容投影，turn 时间线在 `ChatSnapshot.timeline`）。本插件已在 0.1.2-alpha.1 源码基线上重写状态推导（session-state.ts 改为读取 Chat legacy 切片 + 新 SessionSnapshot 的 `lastAgentError`），typecheck、39 个单测与构建全绿，注册改用 `ctx.slots.inject('conversation.input.dock', …)` 新范式）。
 本插件 v0.9.7 起内置**兼容性自诊断**：apply 时探测所需客户端 API,不满足时不再崩溃,而是在页面右下角渲染修复指引横幅(点击可关闭),提示升级 DSH 或更新插件。
 
-> git 依赖方式固定 tag（公开镜像，推荐）：`pnpm add '@dsh-external/dsh-ui-progress@github:lhh010/dsh-ui-progress#v0.10.3'`（或 `github:lhh010/dsh-ui-progress`；历史版本：0809 用户用 `#v0.9.0`，0808 用户用 `#v0.8.0`，0807 用户用 `#v0.6.0`，0805 用户用 `#v0.1.0`）。
+> git 依赖方式固定 tag（公开镜像，推荐）：`pnpm add '@dsh-external/dsh-ui-progress@github:lhh010/dsh-ui-progress#v0.10.4'`（或 `github:lhh010/dsh-ui-progress`；历史版本：0809 用户用 `#v0.9.0`，0808 用户用 `#v0.8.0`，0807 用户用 `#v0.6.0`，0805 用户用 `#v0.1.0`）。
 
 ## 0809 兼容要点（snapshot0809，实机验证）
 
