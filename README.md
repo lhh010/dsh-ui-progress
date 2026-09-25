@@ -56,20 +56,20 @@ dsh plugin --profile web add link:/path/to/dsh-ui-progress
 
 | 插件版本 | DSH 快照 | 说明 |
 | --- | --- | --- |
-| `v0.10.5`（默认） | `dsh-v0.1.2-alpha.1`~`alpha.5`、`rc.1`、`0.1.3-alpha.1`~`0.1.7-alpha.2`、`0.1.7-rc.1` | 声明支持 dsh-v0.1.7-rc.1（舰队扫检零错误零崩溃，零适配改动） |
-| `v0.10.4` | `dsh-v0.1.2-alpha.1`~`alpha.5`、`rc.1`、`0.1.3-alpha.1`~`0.1.6-alpha.2`、`0.1.7-alpha.1`、`0.1.7-alpha.2` | **新增 DSH 版本门控更新提示**：浮标结合当前运行 DSH 版本（宿主端读取）与 compatibility.json 判定——最新版不支持当前 DSH 时改提示「需更高 DSH」（琥珀色）或中间版本（蓝+备注），数据缺失回退旧行为。声明支持 dsh-v0.1.7-alpha.2（实机验证）；typecheck/52 单测/构建全绿 |
-| `v0.10.3` | `dsh-v0.1.2-alpha.1`~`alpha.5`、`rc.1`、`0.1.3-alpha.1`~`0.1.6-alpha.1`、`0.1.7-alpha.1` | **适配 dsh 0.1.7-alpha.1 图标集改名**：primitives 全部 `*16` 图标取消（→ `*Medium`/`*Regular` 双变体），静态解构得 `undefined` → React #130 → slot 错误边界卸载整个输入栏 dock（症状：进度条消失，控制台仅一条压缩报错）。改为运行时回退解析（`*16` → `*Medium` → `*Regular`），单构建兼容 0.1.5/0.1.6/0.1.7+ 宿主；typecheck/45 单测/构建全绿，无头浏览器 E2E 验证 dock 恢复渲染、零控制台报错 |
-| `v0.10.2` | `dsh-v0.1.2-alpha.1`~`alpha.5`、`rc.1`、`0.1.3-alpha.1`~`0.1.6-alpha.2` | **适配 dsh 0.1.6-alpha.2 运行时解析重构**：dock 标准 props 移除 `useSessions`/`useSessionPendingInteraction`，子代理待办/运行指示降级隐藏，其余（todos 进度、token 速率/面板、ETA、状态文案）全功能；typecheck/45 单测/构建全绿，alpha.2 实机验证（进度条恢复显示）。v0.10.1 为纯版本号发布（声明支持 0.1.6-alpha.1），未单独建行 |
-| `v0.10.0` | `dsh-v0.1.2-alpha.1`~`alpha.5`、`rc.1`、`0.1.3-alpha.1`~`0.1.5-rc.2` | **新功能双发**：①「后台运行中」状态（青色）——主会话完成而子代理树仍在执行时，进度条不再误显就绪绿；②Token 用量徽标 + 悬停/点击明细面板（总量/未缓存输入/缓存读取/缓存写入/输出/缓存命中%，实时更新）。typecheck/45 单测/构建全绿，热挂载实机验证 |
-| `v0.9.17` | `dsh-v0.1.2-alpha.1`~`alpha.5`、`rc.1`、`0.1.3-alpha.1`~`0.1.5-rc.2` | 声明支持 0.1.5-rc.1~rc.2（npm 已发布，钉版本实机验证；rc.1 为 0.1.5 系列首个候选版本，client 插件面零代码差异；typecheck/build/39 单测全绿，热挂载实机验证） |
-| `v0.9.16` | `dsh-v0.1.2-alpha.1`~`alpha.5`、`rc.1`、`0.1.3-alpha.1`~`0.1.5-alpha.2` | 声明支持 0.1.5-alpha.2（npm 已发布，钉版本实机验证；alpha.2 改动为 Sidebar 文档预览、模型文件交付、minimal 默认工具调整与 `fs-ext` 安装修复，client 插件面零代码差异；typecheck/build/39 单测全绿，启动清单确认加载） |
-| `v0.9.15` | `dsh-v0.1.2-alpha.1`~`alpha.5`、`rc.1`、`0.1.3-alpha.1`~`0.1.5-alpha.1` | 声明支持 0.1.5-alpha.1（npm 已发布，钉版本实机验证；0.1.5 改动在会话格式 V3 / ctx.agent 移除 / 宿主 bundle 服务路由 `/plugins/??`，client 插件面零代码差异；typecheck/build/单测全绿，启动清单确认加载） |
-| `v0.9.14` | `dsh-v0.1.2-alpha.1`~`alpha.5`、`rc.1`、`0.1.3-alpha.1`、`0.1.3-alpha.2` | 声明支持 0.1.3-alpha.2（npm 已发布，钉版本实机验证；alpha.2 改动全在 pi-ai/Web 顶栏/子代理消息/host 面，client 插件面零代码差异；typecheck/build/单测全绿） |
-| `v0.9.13` | `dsh-v0.1.2-alpha.1`~`alpha.5`、`rc.1`、`0.1.3-alpha.1` | 声明支持 0.1.3-alpha.1（npm 未发布，源码宿主实机验证；0.1.3 破坏性变更集中在 host/session 侧，client 插件面零代码差异；typecheck/build/单测全绿） |
-| `v0.9.12` | `dsh-v0.1.2-alpha.1`~`alpha.5`、`rc.1` | 声明支持 rc.1（alpha.5→rc.1 为纯版本号提交，零代码差异；实机 rc.1 验证通过） |
-| `v0.9.11` | `dsh-v0.1.2-alpha.1`~`alpha.5` | 声明支持 alpha.5（typecheck/build 全绿；alpha.5 为纯 bug 修复，无 API 变更） |
-| `v0.9.10` | `dsh-v0.1.2-alpha.1`~`alpha.4` | 声明支持 alpha.4（typecheck/build 全绿） |
-| `v0.9.9` | `dsh-v0.1.2-alpha.1`~`alpha.3` | 更新提示词补「按 DSH 版本选 tag」路由说明与排查指引 |
+| `v0.10.5`（默认） | `dsh-v0.1.2-alpha.1 ~ alpha.5`、`rc.1`、`0.1.3-alpha.1 ~ 0.1.7-alpha.2`、`0.1.7-rc.1` | 声明支持 dsh-v0.1.7-rc.1（舰队扫检零错误零崩溃，零适配改动） |
+| `v0.10.4` | `dsh-v0.1.2-alpha.1 ~ alpha.5`、`rc.1`、`0.1.3-alpha.1 ~ 0.1.6-alpha.2`、`0.1.7-alpha.1`、`0.1.7-alpha.2` | **新增 DSH 版本门控更新提示**：浮标结合当前运行 DSH 版本（宿主端读取）与 compatibility.json 判定——最新版不支持当前 DSH 时改提示「需更高 DSH」（琥珀色）或中间版本（蓝+备注），数据缺失回退旧行为。声明支持 dsh-v0.1.7-alpha.2（实机验证）；typecheck/52 单测/构建全绿 |
+| `v0.10.3` | `dsh-v0.1.2-alpha.1 ~ alpha.5`、`rc.1`、`0.1.3-alpha.1 ~ 0.1.6-alpha.1`、`0.1.7-alpha.1` | **适配 dsh 0.1.7-alpha.1 图标集改名**：primitives 全部 `*16` 图标取消（→ `*Medium`/`*Regular` 双变体），静态解构得 `undefined` → React #130 → slot 错误边界卸载整个输入栏 dock（症状：进度条消失，控制台仅一条压缩报错）。改为运行时回退解析（`*16` → `*Medium` → `*Regular`），单构建兼容 0.1.5/0.1.6/0.1.7+ 宿主；typecheck/45 单测/构建全绿，无头浏览器 E2E 验证 dock 恢复渲染、零控制台报错 |
+| `v0.10.2` | `dsh-v0.1.2-alpha.1 ~ alpha.5`、`rc.1`、`0.1.3-alpha.1 ~ 0.1.6-alpha.2` | **适配 dsh 0.1.6-alpha.2 运行时解析重构**：dock 标准 props 移除 `useSessions`/`useSessionPendingInteraction`，子代理待办/运行指示降级隐藏，其余（todos 进度、token 速率/面板、ETA、状态文案）全功能；typecheck/45 单测/构建全绿，alpha.2 实机验证（进度条恢复显示）。v0.10.1 为纯版本号发布（声明支持 0.1.6-alpha.1），未单独建行 |
+| `v0.10.0` | `dsh-v0.1.2-alpha.1 ~ alpha.5`、`rc.1`、`0.1.3-alpha.1 ~ 0.1.5-rc.2` | **新功能双发**：①「后台运行中」状态（青色）——主会话完成而子代理树仍在执行时，进度条不再误显就绪绿；②Token 用量徽标 + 悬停/点击明细面板（总量/未缓存输入/缓存读取/缓存写入/输出/缓存命中%，实时更新）。typecheck/45 单测/构建全绿，热挂载实机验证 |
+| `v0.9.17` | `dsh-v0.1.2-alpha.1 ~ alpha.5`、`rc.1`、`0.1.3-alpha.1 ~ 0.1.5-rc.2` | 声明支持 0.1.5-rc.1~rc.2（npm 已发布，钉版本实机验证；rc.1 为 0.1.5 系列首个候选版本，client 插件面零代码差异；typecheck/build/39 单测全绿，热挂载实机验证） |
+| `v0.9.16` | `dsh-v0.1.2-alpha.1 ~ alpha.5`、`rc.1`、`0.1.3-alpha.1 ~ 0.1.5-alpha.2` | 声明支持 0.1.5-alpha.2（npm 已发布，钉版本实机验证；alpha.2 改动为 Sidebar 文档预览、模型文件交付、minimal 默认工具调整与 `fs-ext` 安装修复，client 插件面零代码差异；typecheck/build/39 单测全绿，启动清单确认加载） |
+| `v0.9.15` | `dsh-v0.1.2-alpha.1 ~ alpha.5`、`rc.1`、`0.1.3-alpha.1 ~ 0.1.5-alpha.1` | 声明支持 0.1.5-alpha.1（npm 已发布，钉版本实机验证；0.1.5 改动在会话格式 V3 / ctx.agent 移除 / 宿主 bundle 服务路由 `/plugins/??`，client 插件面零代码差异；typecheck/build/单测全绿，启动清单确认加载） |
+| `v0.9.14` | `dsh-v0.1.2-alpha.1 ~ alpha.5`、`rc.1`、`0.1.3-alpha.1`、`0.1.3-alpha.2` | 声明支持 0.1.3-alpha.2（npm 已发布，钉版本实机验证；alpha.2 改动全在 pi-ai/Web 顶栏/子代理消息/host 面，client 插件面零代码差异；typecheck/build/单测全绿） |
+| `v0.9.13` | `dsh-v0.1.2-alpha.1 ~ alpha.5`、`rc.1`、`0.1.3-alpha.1` | 声明支持 0.1.3-alpha.1（npm 未发布，源码宿主实机验证；0.1.3 破坏性变更集中在 host/session 侧，client 插件面零代码差异；typecheck/build/单测全绿） |
+| `v0.9.12` | `dsh-v0.1.2-alpha.1 ~ alpha.5`、`rc.1` | 声明支持 rc.1（alpha.5→rc.1 为纯版本号提交，零代码差异；实机 rc.1 验证通过） |
+| `v0.9.11` | `dsh-v0.1.2-alpha.1 ~ alpha.5` | 声明支持 alpha.5（typecheck/build 全绿；alpha.5 为纯 bug 修复，无 API 变更） |
+| `v0.9.10` | `dsh-v0.1.2-alpha.1 ~ alpha.4` | 声明支持 alpha.4（typecheck/build 全绿） |
+| `v0.9.9` | `dsh-v0.1.2-alpha.1 ~ alpha.3` | 更新提示词补「按 DSH 版本选 tag」路由说明与排查指引 |
 | `v0.9.8` | `dsh-v0.1.2-alpha.3`（npm alpha） | 兼容 DSH 0.1.2-alpha.3：typecheck/build/单测全绿 + 实机验证 |
 | `v0.9.3` | npm `@deepseek-ai/dsh@0.1.1-rc.1` | 修复中断检测：0.1.x 的停止不再留旧式节点痕迹，改以最新回合的 `turn/end reason` 为主信号（`aborted`/`interrupted` 区分手动停止与崩溃），窗口节点痕迹降级为旧宿主回退路径；新增 12 例单测，npm 0.1.1-rc.1 实机核验 |
 | `v0.9.2` | npm `@deepseek-ai/dsh@0.1.1-rc.1` | 0.1.1-rc.1 实机 boot 验证通过（boot 清单 + client.js 200），依赖的槽位/服务不变 |
