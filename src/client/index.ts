@@ -51,9 +51,18 @@ export const inject = ['slots', 'locale']
  * @param ctx - client root context.
  */
 import { startUpdateChip } from './update-chip.ts'
+import { setJobsServiceGetter } from './jobs-source.ts'
 
 export function apply(ctx: ClientContext): void {
   startUpdateChip()
+  // Background-job signal (optional service): resolved lazily so a later-mounting
+  // jobs capability is still picked up; hosts without it read as zero jobs.
+  setJobsServiceGetter(() => {
+    // ctx.get(name) reads a service without the inject requirement and returns
+    // undefined while its provider fiber is not active — exactly the optional
+    // semantics this signal needs (property access requires inject).
+    try { return ctx.get('jobs') as import('./jobs-source.ts').JobsServiceLike | undefined } catch { return undefined }
+  })
   // Graceful compatibility: if the running DSH lacks the client APIs this
   // plugin needs (e.g. an older DSH without ctx.slots.inject), render a
   // remediation banner instead of throwing.

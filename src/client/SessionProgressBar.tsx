@@ -81,6 +81,7 @@ import {
   runningTool, runningTurnStart, settledToolCount, todoCounts, type ChatLegacy,
 } from './session-state.ts'
 import { formatElapsed, TOKEN_RATE_WINDOW_MS, useFirstTokenAt, useNow, useWindowedTokenRate } from './timing.ts'
+import { useBackgroundJobCount } from './jobs-source.ts'
 import { formatTokenRate, latestTokenDensity, streamedTokenEstimate } from './token-rate.ts'
 
 /** Dock entry props: InputZone owner share + session/global standard kit + locale seat. */
@@ -270,7 +271,12 @@ export function SessionProgressBar({
   // subagent sessions keep executing — the strip must not read 会话就绪
   // (the green done rest) while background work is still running.
   const subRunning = subagentRunningCount(sessionsById as unknown as Record<string, { running?: boolean; parentId?: string; origin?: string }>, sessionId)
-  const background = !running && subRunning > 0
+  // Background jobs (shell job_* / run_in_background rosters) share the same
+  // teal background state as running subagents: an idle main conversation
+  // with live background work must not read 会话就绪.
+  const jobRunning = useBackgroundJobCount(sessionId)
+  const backgroundCount = subRunning + jobRunning
+  const background = !running && backgroundCount > 0
   // Session-wide token usage behind a hover/click panel: the chip shows
   // the running total, the panel breaks it down uncached/cache-read/write
   // and output with the cache-hit percentage. The durable tokenUsage
@@ -314,7 +320,7 @@ export function SessionProgressBar({
           {running || background ? <IconLoading size={14} /> : interrupted ? <IconWarning size={14} /> : <IconSparkle size={14} />}
         </span>
         <span className={css.label}>
-          {pending ? pendingLabel(ownPending, subPending, t) : interrupted ? t('bar.interrupted') : background ? t('bar.background', { count: subRunning }) : stateLabel(running, toolName, thinking, counts, t)}
+          {pending ? pendingLabel(ownPending, subPending, t) : interrupted ? t('bar.interrupted') : background ? t('bar.background', { count: backgroundCount }) : stateLabel(running, toolName, thinking, counts, t)}
         </span>
         <div className={css.track} role="progressbar" aria-valuenow={percent} aria-valuemin={0} aria-valuemax={100}>
           <div
