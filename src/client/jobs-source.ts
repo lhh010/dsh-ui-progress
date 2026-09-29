@@ -8,7 +8,7 @@ import { useEffect, useState } from 'react'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 
 /** Structural subset of the client jobs service this plugin reads. */
-interface JobRowLike { readonly kind?: string; readonly status?: string }
+export interface JobRowLike { readonly kind?: string | undefined; readonly status?: string | undefined }
 interface JobsSnapshotLike { readonly rows?: Readonly<Record<string, readonly JobRowLike[] | undefined>> }
 interface JobsSourceLike {
   getSnapshot(): JobsSnapshotLike
@@ -31,11 +31,15 @@ export function setJobsServiceGetter(resolve: () => JobsServiceLike | undefined)
   }
 }
 
-/** Running-or-stopping background jobs of one session; subagent-kind jobs are
- *  excluded because the sessions seat already counts those as subagent rows. */
-function runningJobCount(sessionId: SessionId): number {
-  let rows: readonly JobRowLike[] | undefined
-  try { rows = getService()?.state.getSnapshot().rows?.[sessionId] } catch { return 0 }
+/**
+ * Count running-or-stopping background jobs in one roster.
+ *
+ * Subagent-kind jobs are excluded: the sessions seat already counts those as
+ * subagent rows, so including them here would double-count one worker.
+ * @param rows - the session's job roster, or undefined when it has none.
+ * @returns the number of jobs still doing work.
+ */
+export function countRunningJobs(rows: readonly JobRowLike[] | undefined): number {
   if (rows === undefined) return 0
   let count = 0
   for (const job of rows) {
@@ -43,6 +47,11 @@ function runningJobCount(sessionId: SessionId): number {
     if (job.status === 'running' || job.status === 'stopping') count += 1
   }
   return count
+}
+
+/** Running-or-stopping background jobs of one session, read through the service. */
+function runningJobCount(sessionId: SessionId): number {
+  try { return countRunningJobs(getService()?.state.getSnapshot().rows?.[sessionId]) } catch { return 0 }
 }
 
 /** Reactive running-background-job count for one session; 0 without the service. */
