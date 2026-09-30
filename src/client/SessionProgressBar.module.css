@@ -25,15 +25,34 @@
   box-sizing: border-box;
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
+  /* Row gap only matters once the meta group wraps at narrow widths. */
+  row-gap: 2px;
   gap: 10px;
   width: 100%;
   max-width: calc(var(--dsh-composer-card-max-width) - 4 * var(--dsh-composer-dock-inset));
-  height: 36px;
+  /* Auto height keeps the single-line look at 36px and lets the wrapped
+     second row expand the bar instead of clipping it. */
+  min-height: 36px;
   margin: 0 auto;
   padding: 4px 5px 4px 12px;
   border: 1px solid var(--dsw-alias-border-l1);
   border-radius: 12px;
   background: var(--dsw-specific-tip);
+}
+
+/* Trailing counters as one unbreakable group: wraps to its own line right
+   after the percent when the composer gets too narrow, instead of
+   cramming every counter into one overflowing row. */
+.meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: none;
+  /* Auto margins are invisible while the meta shares the single line (the
+     growing track absorbs all free space) and center the group once it
+     wraps onto its own line at narrow composer widths. */
+  margin-inline: auto;
 }
 
 /* Running state: a soft brand-colored halo pulses around the bar. */

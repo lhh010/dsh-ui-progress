@@ -330,27 +330,32 @@ export function SessionProgressBar({
           {running && !pending && <div className={css.shimmer} />}
         </div>
         <span className={css.percent}>{percent}%</span>
-        {running && modelEta !== null && <span className={css.eta}>{t('bar.eta', { duration: modelEta })}</span>}
-        {running && elapsed !== null && <span className={css.counter}>{t('bar.elapsed', { duration: formatElapsed(elapsed) })}</span>}
-        {running && tokenRate !== null && <span className={css.rate}>{t('bar.tokenRate', { rate: formatTokenRate(tokenRate) })}</span>}
-        {!running && lastTurn !== null && <span className={css.counter}>{t('bar.lastTurn', { duration: formatElapsed(lastTurn) })}</span>}
-        <span className={css.counter}>{t('bar.turn', { turn })}</span>
-        <span className={css.counter}>{t('bar.tools', { count: settled })}</span>
-        {tokenTotals !== null && tokenTotals.total > 0 && (
-          <button
-            type="button"
-            className={css.tokenChip}
-            data-pin={tokenPinned ? 'true' : undefined}
-            aria-expanded={tokenPanelOpen}
-            title={t('token.total')}
-            onClick={() => { setTokenPinned(v => !v) }}
-            onMouseEnter={() => { setTokenHover(true) }}
-            onMouseLeave={() => { scheduleTokenHide() }}
-          >
-            <IconDatabase size={12} />
-            {formatTokenCount(tokenTotals.total)}
-          </button>
-        )}
+        {/* The meta group keeps the trailing counters as one unbreakable
+            flex item: at narrow composer widths the whole group wraps to a
+            second line right after the percent instead of cramming one row. */}
+        <div className={css.meta}>
+          {running && modelEta !== null && <span className={css.eta}>{t('bar.eta', { duration: modelEta })}</span>}
+          {running && elapsed !== null && <span className={css.counter}>{t('bar.elapsed', { duration: formatElapsed(elapsed) })}</span>}
+          {running && tokenRate !== null && <span className={css.rate}>{t('bar.tokenRate', { rate: formatTokenRate(tokenRate) })}</span>}
+          {!running && lastTurn !== null && <span className={css.counter}>{t('bar.lastTurn', { duration: formatElapsed(lastTurn) })}</span>}
+          <span className={css.counter}>{t('bar.turn', { turn })}</span>
+          <span className={css.counter}>{t('bar.tools', { count: settled })}</span>
+          {tokenTotals !== null && tokenTotals.total > 0 && (
+            <button
+              type="button"
+              className={css.tokenChip}
+              data-pin={tokenPinned ? 'true' : undefined}
+              aria-expanded={tokenPanelOpen}
+              title={t('token.total')}
+              onClick={() => { setTokenPinned(v => !v) }}
+              onMouseEnter={() => { setTokenHover(true) }}
+              onMouseLeave={() => { scheduleTokenHide() }}
+            >
+              <IconDatabase size={12} />
+              {formatTokenCount(tokenTotals.total)}
+            </button>
+          )}
+        </div>
       </div>
       {tokenTotals !== null && tokenTotals.total > 0 && tokenPanelOpen && (
         <div className={css.tokenPanel} role="dialog" aria-label={t('token.total')}
