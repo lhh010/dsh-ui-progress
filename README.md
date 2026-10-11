@@ -59,7 +59,8 @@ dsh plugin --profile web add link:/path/to/dsh-ui-progress
 
 | 插件版本 | DSH 快照 | 说明 |
 | --- | --- | --- |
-| `v0.11.2`（默认） | `dsh-v0.1.2-alpha.1 ~ alpha.5`、`rc.1`、`0.1.3-alpha.1 ~ 0.1.7-alpha.2`、`0.1.7-rc.1`、`0.1.7-rc.2`、`0.2.0-rc.1`、`0.2.0-rc.2`、`0.2.1-alpha.1` | 声明支持 dsh-v0.2.1-alpha.1（升级实机验证：web 宿主七插件挂载激活正常，零适配改动）；typecheck/57 单测/构建全绿 |
+| `v0.11.3`（默认） | `dsh-v0.1.2-alpha.1 ~ alpha.5`、`rc.1`、`0.1.3-alpha.1 ~ 0.1.7-alpha.2`、`0.1.7-rc.1`、`0.1.7-rc.2`、`0.2.0-rc.1`、`0.2.0-rc.2`、`0.2.1-alpha.1`、`0.2.1-alpha.2` | 声明支持 dsh-v0.2.1-alpha.2（升级实机验证：web profile `--dump-config` 全插件行加载、peer 校验零错误，宿主启动监听正常，零适配改动）；双 bundle `node --check` 通过 |
+| `v0.11.2` | `dsh-v0.1.2-alpha.1 ~ alpha.5`、`rc.1`、`0.1.3-alpha.1 ~ 0.1.7-alpha.2`、`0.1.7-rc.1`、`0.1.7-rc.2`、`0.2.0-rc.1`、`0.2.0-rc.2`、`0.2.1-alpha.1` | 声明支持 dsh-v0.2.1-alpha.1（升级实机验证：web 宿主七插件挂载激活正常，零适配改动）；typecheck/57 单测/构建全绿 |
 | `v0.11.1` | `dsh-v0.1.2-alpha.1 ~ alpha.5`、`rc.1`、`0.1.3-alpha.1 ~ 0.1.7-alpha.2`、`0.1.7-rc.1`、`0.1.7-rc.2`、`0.2.0-rc.1`、`0.2.0-rc.2` | **窄宽度两行自适应**：尾部计数收拢为不可拆分的 `.meta` 组，进度条 `flex-wrap` 在百分比处折行——单行布局与原先完全一致，折行后第二行 `margin-inline: auto` 居中；条高 36px→min-height 自适应不裁切；typecheck/57 单测/构建全绿，实机窄窗口验证（用户确认） |
 | `v0.10.10` | `dsh-v0.1.2-alpha.1 ~ alpha.5`、`rc.1`、`0.1.3-alpha.1 ~ 0.1.7-alpha.2`、`0.1.7-rc.1`、`0.1.7-rc.2`、`0.2.0-rc.1`、`0.2.0-rc.2` | 声明支持 dsh-v0.2.0-rc.2（升级实机验证：六插件挂载激活正常，零适配改动）；typecheck/57 单测/构建全绿 |
 | `v0.10.9` | `dsh-v0.1.2-alpha.1 ~ alpha.5`、`rc.1`、`0.1.3-alpha.1 ~ 0.1.7-alpha.2`、`0.1.7-rc.1`、`0.1.7-rc.2`、`0.2.0-rc.1` | 测试覆盖与内部重构（行为不变）：抽出纯函数 `countRunningJobs(rows)` 并新增 5 个单测（空 roster / running+stopping 计数 / 已结束不计 / subagent-kind 排除防双重计数 / 未知 kind 仍计、无 status 不计）——v0.10.8 的后台态修复此前零测试覆盖；typecheck/57 单测/构建全绿 |

@@ -48,6 +48,7 @@ Build artifacts track DSH snapshot versions; pick the matching version for your 
 
 | Plugin version | DSH snapshot | Notes |
 | --- | --- | --- |
+| `v0.11.3` (default) | `snapshots/20260805T134133Z` (snapshot0805)、`0.2.1-alpha.2` | Declare dsh-v0.2.1-alpha.2 support (verified on the real web profile: `--dump-config` loads every plugin row with zero peer errors, host boots and listens, no adaptation changes); both bundles pass `node --check` |
 | `v0.1.0` | `snapshots/20260805T134133Z` (snapshot0805) | Old build; installed via the legacy method (`~/.dsh/config.yaml` + `pnpm add -w link:`) |
 | `v0.2.0` | `snapshots/20260806T160212Z` (snapshot0806) | Earlier build for the same snapshot (no elapsed time / ETA / failure state / phase timeline) |
 | `v0.3.0` | `snapshots/20260806T160212Z` (snapshot0806) | Previous build for the same snapshot (card elapsed-time / ETA copy interpolation missing) |
