@@ -10,9 +10,12 @@ DSH Web UI 会话进度插件：为 DeepSeek Harness 的 Web GUI 的输入框停
 
 ## 安装
 
+> **安装方式（v0.11.4 起自动挂载）**：本包自 v0.11.4 起自带 `cordis.patch.yml` 并声明 `dsh.bundle.patch`——`dsh plugin --profile web add` 安装后**自动注册 profile 层并挂载**，不再需要手写 `insert` 配置行（固定旧 tag 的部署仍需）。**GUI 注意**：插件页「添加插件」只接受注册表包名或本地目录路径；`name@github:owner/repo#tag` 是 pnpm 别名规格（CLI 专用），粘进 GUI 会报 `ERR_PNPM_INVALID_PACKAGE_NAME`——GUI 请克隆后用本地目录路径，或等 npm 发布后用包名。
+
+
 ```sh
 # 方式一：git 依赖固定 tag（公开镜像，推荐；也可用 github:lhh010/dsh-ui-progress）
-dsh plugin --profile web add '@dsh-external/dsh-ui-progress@github:lhh010/dsh-ui-progress#v0.11.2'
+dsh plugin --profile web add '@dsh-external/dsh-ui-progress@github:lhh010/dsh-ui-progress#v0.11.4'
 
 # 方式二：本地 link（开发）
 git clone https://github.com/lhh010/dsh-ui-progress.git
@@ -35,7 +38,7 @@ dsh plugin --profile web add link:/path/to/dsh-ui-progress
 把下面这段提示词发给任意一个 DSH 会话，模型会替你完成安装：
 
 > 帮我安装 dsh-ui-progress 插件（DSH 会话进度条：输入框常驻会话进度条/todos 真实进度/中断橘红态），步骤：
-> 1. 执行 `dsh plugin --profile web add '@dsh-external/dsh-ui-progress@github:lhh010/dsh-ui-progress#v0.11.2'`（首次可能被 pnpm 11 拦截 node-pty 构建脚本而失败）
+> 1. 执行 `dsh plugin --profile web add '@dsh-external/dsh-ui-progress@github:lhh010/dsh-ui-progress#v0.11.4'`（首次可能被 pnpm 11 拦截 node-pty 构建脚本而失败）
 > 2. 在 `~/.dsh/profiles/web` 下执行 `pnpm approve-builds --all`（放行构建脚本）
 > 3. 再执行一次第 1 步的安装命令
 > 4. 完成后提醒我硬刷新浏览器（Ctrl/Cmd+Shift+R）
@@ -59,7 +62,8 @@ dsh plugin --profile web add link:/path/to/dsh-ui-progress
 
 | 插件版本 | DSH 快照 | 说明 |
 | --- | --- | --- |
-| `v0.11.3`（默认） | `dsh-v0.1.2-alpha.1 ~ alpha.5`、`rc.1`、`0.1.3-alpha.1 ~ 0.1.7-alpha.2`、`0.1.7-rc.1`、`0.1.7-rc.2`、`0.2.0-rc.1`、`0.2.0-rc.2`、`0.2.1-alpha.1`、`0.2.1-alpha.2` | 声明支持 dsh-v0.2.1-alpha.2（升级实机验证：web profile `--dump-config` 全插件行加载、peer 校验零错误，宿主启动监听正常，零适配改动）；双 bundle `node --check` 通过 |
+| `v0.11.4`（默认） | 与上一版相同 | **自带 bundle 声明**：补齐 `cordis.patch.yml` 并声明 `dsh.bundle.patch`——`dsh plugin --profile web add` 装完自动注册并挂载 profile 层，不再需要手写 insert 行（社区反馈「GUI 安装后不生效」的根因）；双 bundle `node --check` 通过 |
+| `v0.11.3` | `dsh-v0.1.2-alpha.1 ~ alpha.5`、`rc.1`、`0.1.3-alpha.1 ~ 0.1.7-alpha.2`、`0.1.7-rc.1`、`0.1.7-rc.2`、`0.2.0-rc.1`、`0.2.0-rc.2`、`0.2.1-alpha.1`、`0.2.1-alpha.2` | 声明支持 dsh-v0.2.1-alpha.2（升级实机验证：web profile `--dump-config` 全插件行加载、peer 校验零错误，宿主启动监听正常，零适配改动）；双 bundle `node --check` 通过 |
 | `v0.11.2` | `dsh-v0.1.2-alpha.1 ~ alpha.5`、`rc.1`、`0.1.3-alpha.1 ~ 0.1.7-alpha.2`、`0.1.7-rc.1`、`0.1.7-rc.2`、`0.2.0-rc.1`、`0.2.0-rc.2`、`0.2.1-alpha.1` | 声明支持 dsh-v0.2.1-alpha.1（升级实机验证：web 宿主七插件挂载激活正常，零适配改动）；typecheck/57 单测/构建全绿 |
 | `v0.11.1` | `dsh-v0.1.2-alpha.1 ~ alpha.5`、`rc.1`、`0.1.3-alpha.1 ~ 0.1.7-alpha.2`、`0.1.7-rc.1`、`0.1.7-rc.2`、`0.2.0-rc.1`、`0.2.0-rc.2` | **窄宽度两行自适应**：尾部计数收拢为不可拆分的 `.meta` 组，进度条 `flex-wrap` 在百分比处折行——单行布局与原先完全一致，折行后第二行 `margin-inline: auto` 居中；条高 36px→min-height 自适应不裁切；typecheck/57 单测/构建全绿，实机窄窗口验证（用户确认） |
 | `v0.10.10` | `dsh-v0.1.2-alpha.1 ~ alpha.5`、`rc.1`、`0.1.3-alpha.1 ~ 0.1.7-alpha.2`、`0.1.7-rc.1`、`0.1.7-rc.2`、`0.2.0-rc.1`、`0.2.0-rc.2` | 声明支持 dsh-v0.2.0-rc.2（升级实机验证：六插件挂载激活正常，零适配改动）；typecheck/57 单测/构建全绿 |
@@ -104,7 +108,7 @@ dsh plugin --profile web add link:/path/to/dsh-ui-progress
 > **alpha 发版兼容**：兼容 `dsh-v0.1.2-alpha.1`（GitHub tag `dsh-v0.1.2-alpha.1`，源码构建安装，不发布 npm；v0.9.4 迁移并验证：0.1.2-alpha.1 移除了 `@deepseek-ai/dsh-client-runtime` 客户端包，`ClientContext` 改从 `@deepseek-ai/cordis` 导入、`ConversationSnapshot` 重构为 views 架构（旧 `nodes`/`turnTimings`/`turnEnds`/`partial`/`runningCalls` 全部移到 `ChatSnapshot.legacy` 兼容投影，turn 时间线在 `ChatSnapshot.timeline`）。本插件已在 0.1.2-alpha.1 源码基线上重写状态推导（session-state.ts 改为读取 Chat legacy 切片 + 新 SessionSnapshot 的 `lastAgentError`），typecheck、39 个单测与构建全绿，注册改用 `ctx.slots.inject('conversation.input.dock', …)` 新范式）。
 本插件 v0.9.7 起内置**兼容性自诊断**：apply 时探测所需客户端 API,不满足时不再崩溃,而是在页面右下角渲染修复指引横幅(点击可关闭),提示升级 DSH 或更新插件。
 
-> git 依赖方式固定 tag（公开镜像，推荐）：`pnpm add '@dsh-external/dsh-ui-progress@github:lhh010/dsh-ui-progress#v0.11.2'`（或 `github:lhh010/dsh-ui-progress`；历史版本：0809 用户用 `#v0.9.0`，0808 用户用 `#v0.8.0`，0807 用户用 `#v0.6.0`，0805 用户用 `#v0.1.0`）。
+> git 依赖方式固定 tag（公开镜像，推荐）：`pnpm add '@dsh-external/dsh-ui-progress@github:lhh010/dsh-ui-progress#v0.11.4'`（或 `github:lhh010/dsh-ui-progress`；历史版本：0809 用户用 `#v0.9.0`，0808 用户用 `#v0.8.0`，0807 用户用 `#v0.6.0`，0805 用户用 `#v0.1.0`）。
 
 ## 0809 兼容要点（snapshot0809，实机验证）
 
