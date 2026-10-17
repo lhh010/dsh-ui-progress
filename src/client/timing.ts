@@ -134,15 +134,18 @@ export function useWindowedTokenRate(
   const windowStartRef = useRef<{ time: number; tokens: number } | null>(null)
   const tokensRef = useRef(tokens)
   tokensRef.current = tokens
+  const stalledRef = useRef(0)
 
   useEffect(() => {
     if (!enabled || anchor === null) {
       windowStartRef.current = null
+      stalledRef.current = 0
       setRate(null)
       return
     }
     if (windowStartRef.current === null) {
       windowStartRef.current = { time: Date.now(), tokens: tokensRef.current }
+      stalledRef.current = 0
     }
     const timer = setInterval(() => {
       const start = windowStartRef.current
@@ -150,7 +153,16 @@ export function useWindowedTokenRate(
       const now = Date.now()
       const gained = tokensRef.current - start.tokens
       if (gained > 0) {
+        stalledRef.current = 0
         setRate(liveTokenRate(gained, start.time, now))
+      } else {
+        stalledRef.current += 1
+        // A fully stalled window means no characters are arriving — the
+        // step settled and the turn moved on (tool execution waiting on a
+        // result, provider pause). Keeping the last figure would freeze a
+        // stale rate on screen through the whole stall, so after two full
+        // empty windows (~2s) the readout clears until tokens flow again.
+        if (stalledRef.current >= 2) setRate(null)
       }
       // Advance the window baseline either way so the average always covers
       // the most recent window.
